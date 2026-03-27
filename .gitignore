@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+venv/
+
+# Node
+node_modules/
+.next/
+out/
+
+# Environment
+.env
+!.env.default
+
+# Data volumes
+work/
+segments/
+data/
+config/
+downloads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+postgres_data/
+
+# Alembic
+backend/alembic/versions/*.pyc
+
+# Stray downloaded packages
+SponsorBlock-master/
+
+# Claude memory
+.claude/

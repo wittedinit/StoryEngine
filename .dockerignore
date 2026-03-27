@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.env
+work
+segments
+data
+config
+downloads
+postgres_data
+__pycache__
+*.pyc
+.DS_Store
+.claude

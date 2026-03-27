@@ -1,0 +1,28 @@
+# NVIDIA GPU override.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up
+#
+# Apple Metal (macOS): Docker Desktop cannot pass through the Metal GPU to
+# containers. For GPU-accelerated transcription on Apple Silicon, run the
+# worker natively (outside Docker) with SE_WHISPER_DEVICE=metal.
+
+services:
+  worker:
+    environment:
+      - SE_WHISPER_DEVICE=cuda
+      - SE_WHISPER_COMPUTE_TYPE=float16
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

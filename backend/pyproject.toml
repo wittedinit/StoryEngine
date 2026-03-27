@@ -1,0 +1,37 @@
+[project]
+name = "storyengine"
+version = "0.1.0"
+description = "Video story splitting and deduplication engine"
+requires-python = ">=3.11"
+dependencies = [
+    "sqlalchemy[asyncio]>=2.0",
+    "alembic>=1.13",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+server = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "asyncpg>=0.30",
+    "psycopg2-binary>=2.9",
+    "redis>=5.0",
+    "usearch>=2.9",
+]
+worker = [
+    "celery[redis]>=5.4",
+    "psycopg2-binary>=2.9",
+    "asyncpg>=0.30",
+    "faster-whisper>=1.0",
+    "usearch>=2.9",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
