@@ -71,7 +71,21 @@ async def get_video(video_id: UUID, db: AsyncSession = Depends(get_db)):
     video = await db.get(Video, video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
-    return VideoDetail.model_validate(video)
+
+    # Compute stream URL — derive path relative to downloads_dir
+    from pathlib import Path
+    from app.services.settings import get_setting
+    stream_url = None
+    try:
+        downloads_dir = Path(await get_setting(db, "downloads_dir"))
+        rel = Path(video.file_path).relative_to(downloads_dir)
+        stream_url = f"/files/downloads/{rel}"
+    except Exception:
+        pass
+
+    detail = VideoDetail.model_validate(video)
+    detail.stream_url = stream_url
+    return detail
 
 
 @router.get("/{video_id}/transcript", response_model=TranscriptSchema)

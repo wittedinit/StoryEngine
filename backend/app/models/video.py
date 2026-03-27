@@ -20,6 +20,7 @@ class Video(Base, TimestampMixin):
     duration: Mapped[float | None] = mapped_column(Float, nullable=True)
     format: Mapped[str | None] = mapped_column(String(32), nullable=True)
     title: Mapped[str] = mapped_column(String(1024), nullable=False)
+    channel_name: Mapped[str | None] = mapped_column(String(512), nullable=True, index=True)
     status: Mapped[VideoStatus] = mapped_column(default=VideoStatus.DISCOVERED, nullable=False)
     metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 

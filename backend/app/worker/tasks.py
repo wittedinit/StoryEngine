@@ -146,6 +146,27 @@ def process_video(self, video_id: str):
             db.add(video)
             db.commit()
 
+            # Auto-upload to YouTube if enabled
+            from app.services.settings import get_setting_sync
+            if get_setting_sync(db, "youtube_auto_upload").lower() == "true":
+                stories_to_upload = db.execute(
+                    select(Story).where(
+                        Story.video_id == uuid.UUID(video_id),
+                        Story.clip_path.isnot(None),
+                        Story.youtube_video_id.is_(None),
+                    )
+                ).scalars().all()
+                for s in stories_to_upload:
+                    youtube_upload_task.delay(str(s.id))
+
+            # Fire job_completed webhook
+            from app.services.webhook_fire import fire_webhooks_sync
+            fire_webhooks_sync(db, "job_completed", {
+                "video_id": video_id,
+                "video_title": video.title if video else "",
+                "job_id": job_id,
+            })
+
         except Exception as e:
             logger.exception("Pipeline failed for video %s", video_id)
             _update_job(db, job_id, JobStatus.FAILED, error_message=str(e)[:2000])
@@ -154,6 +175,12 @@ def process_video(self, video_id: str):
                 video.status = VideoStatus.FAILED
                 db.add(video)
                 db.commit()
+            from app.services.webhook_fire import fire_webhooks_sync
+            fire_webhooks_sync(db, "job_failed", {
+                "video_id": video_id,
+                "job_id": job_id,
+                "error": str(e)[:500],
+            })
             raise
 
     finally:
@@ -614,6 +641,173 @@ def embed_all_stories_task():
 
     except Exception as e:
         logger.exception("Embed all failed")
+        raise
+    finally:
+        db.close()
+
+
+@celery.task(name="app.worker.tasks.generate_thumbnail_task", queue="pipeline")
+def generate_thumbnail_task(story_id: str):
+    """Generate a thumbnail for a story at its midpoint."""
+    db = SyncSessionLocal()
+    try:
+        story = db.get(Story, uuid.UUID(story_id))
+        if not story:
+            logger.error("Story not found: %s", story_id)
+            return
+
+        video = db.get(Video, story.video_id)
+        if not video:
+            return
+
+        from pathlib import Path
+        from app.services.settings import get_setting_sync
+        segments_dir = Path(get_setting_sync(db, "segments_dir"))
+
+        midpoint = (story.start_time + story.end_time) / 2
+        thumb_dir = segments_dir / str(story.video_id) / "thumbnails"
+        output_path = thumb_dir / f"{story.story_index:03d}.jpg"
+
+        from app.services.thumbnail import generate_thumbnail
+        generate_thumbnail(video.file_path, midpoint, output_path)
+
+        # Store relative path
+        story.thumbnail_path = str(output_path.relative_to(segments_dir))
+        db.add(story)
+        db.commit()
+
+        # Fire webhook
+        from app.services.webhook_fire import fire_webhooks_sync
+        fire_webhooks_sync(db, "thumbnail_generated", {
+            "story_id": story_id,
+            "story_title": story.title,
+            "thumbnail_path": story.thumbnail_path,
+        })
+
+        logger.info("Thumbnail generated for story %s: %s", story_id, story.thumbnail_path)
+        return {"thumbnail_path": story.thumbnail_path}
+
+    except Exception as e:
+        logger.exception("Thumbnail generation failed for story %s", story_id)
+        raise
+    finally:
+        db.close()
+
+
+@celery.task(name="app.worker.tasks.youtube_upload_task", queue="pipeline", bind=True)
+def youtube_upload_task(self, story_id: str):
+    """Upload a story clip to YouTube."""
+    db = SyncSessionLocal()
+    try:
+        story = db.get(Story, uuid.UUID(story_id))
+        if not story:
+            logger.error("Story not found: %s", story_id)
+            return
+
+        video = db.get(Video, story.video_id)
+        if not story.clip_path:
+            return {"error": "No clip file"}
+
+        from pathlib import Path
+        from app.services.settings import get_setting_sync
+        segments_dir = Path(get_setting_sync(db, "segments_dir"))
+        privacy = get_setting_sync(db, "youtube_default_privacy")
+        playlist_mode = get_setting_sync(db, "youtube_playlist_mode")
+
+        clip_full_path = segments_dir / story.clip_path
+        if not clip_full_path.exists():
+            return {"error": f"Clip file missing: {story.clip_path}"}
+
+        from app.services.youtube_upload import (
+            get_youtube_service, upload_clip,
+            create_or_get_playlist, add_to_playlist,
+        )
+
+        self.update_state(state="PROGRESS", meta={"progress": 5})
+        youtube = get_youtube_service(db)
+
+        description = f"{story.summary}\n\nFrom: {video.title}\nExtracted by StoryEngine"
+        yt_video_id = upload_clip(youtube, clip_full_path, story.title, description, privacy)
+
+        story.youtube_video_id = yt_video_id
+        self.update_state(state="PROGRESS", meta={"progress": 90})
+
+        # Playlist handling
+        playlist_id = None
+        if playlist_mode == "per_video":
+            playlist_id = create_or_get_playlist(youtube, video.title, privacy=privacy)
+        elif playlist_mode == "per_channel" and video.channel_name:
+            playlist_id = create_or_get_playlist(youtube, video.channel_name, privacy=privacy)
+
+        if playlist_id:
+            add_to_playlist(youtube, yt_video_id, playlist_id)
+            story.youtube_playlist_id = playlist_id
+
+        db.add(story)
+        db.commit()
+
+        # Fire webhook
+        from app.services.webhook_fire import fire_webhooks_sync
+        fire_webhooks_sync(db, "youtube_uploaded", {
+            "story_id": story_id,
+            "story_title": story.title,
+            "youtube_video_id": yt_video_id,
+            "youtube_url": f"https://youtu.be/{yt_video_id}",
+        })
+
+        logger.info("YouTube upload complete for story %s: https://youtu.be/%s", story_id, yt_video_id)
+        return {
+            "youtube_video_id": yt_video_id,
+            "youtube_url": f"https://youtu.be/{yt_video_id}",
+            "youtube_playlist_id": playlist_id,
+        }
+
+    except Exception as e:
+        logger.exception("YouTube upload failed for story %s", story_id)
+        raise
+    finally:
+        db.close()
+
+
+@celery.task(name="app.worker.tasks.build_bulk_zip_task", queue="pipeline", bind=True)
+def build_bulk_zip_task(self, story_ids: list[str]):
+    """Assemble a ZIP archive of clip files for the given story IDs."""
+    import zipfile
+    from pathlib import Path as _Path
+
+    db = SyncSessionLocal()
+    try:
+        from app.services.settings import get_setting_sync
+        segments_dir = _Path(get_setting_sync(db, "segments_dir"))
+
+        stories = db.execute(
+            select(Story).where(Story.id.in_([uuid.UUID(sid) for sid in story_ids]))
+        ).scalars().all()
+
+        # Filter to stories that have clips
+        clippable = [s for s in stories if s.clip_path]
+        if not clippable:
+            return {"error": "None of the selected stories have clip files. Split them first."}
+
+        zips_dir = settings.work_dir / "zips"
+        zips_dir.mkdir(parents=True, exist_ok=True)
+        zip_path = zips_dir / f"{self.request.id}.zip"
+
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_STORED) as zf:
+            for i, story in enumerate(clippable):
+                clip_path = segments_dir / story.clip_path
+                if clip_path.exists():
+                    zf.write(clip_path, arcname=clip_path.name)
+                self.update_state(
+                    state="PROGRESS",
+                    meta={"progress": round((i + 1) / len(clippable) * 100)},
+                )
+
+        logger.info("Built ZIP with %d clips at %s", len(clippable), zip_path)
+        return {"zip_path": str(zip_path), "clip_count": len(clippable)}
+
+    except Exception as e:
+        logger.exception("Bulk ZIP failed for task %s", self.request.id)
         raise
     finally:
         db.close()

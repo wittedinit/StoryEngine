@@ -19,6 +19,9 @@ server = [
     "psycopg2-binary>=2.9",
     "redis>=5.0",
     "usearch>=2.9",
+    "google-api-python-client>=2.120",
+    "google-auth-oauthlib>=1.2",
+    "google-auth-httplib2>=0.2",
 ]
 worker = [
     "celery[redis]>=5.4",
@@ -26,6 +29,9 @@ worker = [
     "asyncpg>=0.30",
     "faster-whisper>=1.0",
     "usearch>=2.9",
+    "google-api-python-client>=2.120",
+    "google-auth-oauthlib>=1.2",
+    "google-auth-httplib2>=0.2",
 ]
 
 [build-system]

@@ -141,6 +141,61 @@ SETTING_DEFINITIONS: dict[str, dict[str, Any]] = {
         "restart_required": False,
         "placeholder": "/segments",
     },
+    # ── YouTube integration ────────────────────────────────────────────────────
+    "youtube_client_id": {
+        "label": "YouTube Client ID",
+        "default_from_env": lambda: "",
+        "type": "string",
+        "description": "OAuth 2.0 Client ID from Google Cloud Console (APIs & Services → Credentials)",
+        "category": "youtube",
+        "restart_required": False,
+        "placeholder": "123456789-abc...apps.googleusercontent.com",
+    },
+    "youtube_client_secret": {
+        "label": "YouTube Client Secret",
+        "default_from_env": lambda: "",
+        "type": "password",
+        "description": "OAuth 2.0 Client Secret from Google Cloud Console",
+        "category": "youtube",
+        "restart_required": False,
+    },
+    "youtube_auto_upload": {
+        "label": "Auto-Upload to YouTube",
+        "default_from_env": lambda: "false",
+        "type": "select",
+        "options": ["true", "false"],
+        "description": "Automatically upload clips to YouTube after splitting",
+        "category": "youtube",
+        "restart_required": False,
+    },
+    "youtube_default_privacy": {
+        "label": "Default Privacy",
+        "default_from_env": lambda: "unlisted",
+        "type": "select",
+        "options": ["public", "unlisted", "private"],
+        "description": "Privacy setting for uploaded YouTube videos",
+        "category": "youtube",
+        "restart_required": False,
+    },
+    "youtube_playlist_mode": {
+        "label": "Playlist Mode",
+        "default_from_env": lambda: "per_video",
+        "type": "select",
+        "options": ["per_video", "per_channel", "none"],
+        "description": "How to organise uploaded clips into YouTube playlists",
+        "category": "youtube",
+        "restart_required": False,
+    },
+    # Stored by OAuth flow — read-only in the settings UI
+    "youtube_refresh_token": {
+        "label": "YouTube Auth Token",
+        "default_from_env": lambda: "",
+        "type": "string",
+        "description": "Stored OAuth 2.0 refresh token (set automatically when you connect your account)",
+        "category": "youtube",
+        "restart_required": False,
+        "readonly": True,
+    },
 }
 
 
@@ -280,3 +335,15 @@ def get_setting_sync(db: Session, key: str) -> str:
     if defn:
         return defn["default_from_env"]()
     raise KeyError(f"Unknown setting: {key}")
+
+
+def save_setting_sync(db: Session, key: str, value: str) -> None:
+    """Upsert a setting value — used by Celery workers to persist OAuth tokens."""
+    setting = db.execute(select(Setting).where(Setting.key == key)).scalar_one_or_none()
+    if setting:
+        setting.value = value
+    else:
+        defn = SETTING_DEFINITIONS.get(key, {})
+        setting = Setting(key=key, value=value, description=defn.get("description", ""))
+        db.add(setting)
+    db.commit()

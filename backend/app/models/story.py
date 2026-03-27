@@ -26,6 +26,9 @@ class Story(Base, TimestampMixin):
     clip_path: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     embedding: Mapped[list | None] = mapped_column(JSON, nullable=True)
     segment_type: Mapped[str] = mapped_column(String(32), nullable=False, default="story")
+    thumbnail_path: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    youtube_video_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    youtube_playlist_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     video: Mapped["Video"] = relationship(back_populates="stories")
 

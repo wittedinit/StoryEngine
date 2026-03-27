@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, DedupCluster } from "@/lib/api";
+// api is used for playlist URL generation
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -128,7 +129,18 @@ export default function DedupPage() {
           <p className="text-sm text-gray-500">{clusters.length} duplicate cluster{clusters.length !== 1 ? "s" : ""} found</p>
           {clusters.map((cluster, i) => (
             <div key={i} className="bg-gray-900 border border-yellow-900/50 rounded-lg p-4">
-              <p className="text-xs text-yellow-500 mb-3">Cluster {i + 1} — {cluster.length} similar stories</p>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-yellow-500">Cluster {i + 1} — {cluster.length} similar stories</p>
+                {cluster.some((s) => s.has_clip) && (
+                  <a
+                    href={api.getStoriesPlaylistUrl(cluster.map((s) => s.id), "m3u8")}
+                    className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                    title="Export M3U8 playlist for this cluster"
+                  >
+                    Export playlist
+                  </a>
+                )}
+              </div>
               <div className="space-y-2">
                 {cluster.map((story) => (
                   <Link

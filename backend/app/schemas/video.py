@@ -14,6 +14,7 @@ class VideoSummary(BaseModel):
     duration: float | None
     format: str | None
     status: VideoStatus
+    channel_name: str | None = None
     story_count: int = 0
     created_at: datetime
 
@@ -25,6 +26,7 @@ class VideoDetail(VideoSummary):
     file_size: int
     file_hash: str
     metadata_json: dict | None
+    stream_url: str | None = None
     updated_at: datetime
 
 

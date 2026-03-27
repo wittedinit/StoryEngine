@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.story import Story
 from app.models.video import Video
-from app.schemas.story import StoryDetail, StoryListResponse, StorySummary
+from app.schemas.story import StoryDetail, StoryListResponse, StorySummary, StoryPatch
 
 router = APIRouter(prefix="/stories", tags=["stories"])
 
@@ -88,6 +88,71 @@ async def get_story(story_id: UUID, db: AsyncSession = Depends(get_db)):
         has_clip=story.clip_path is not None,
         has_embedding=story.embedding is not None,
         clip_path=story.clip_path,
+        thumbnail_path=story.thumbnail_path,
+        youtube_video_id=story.youtube_video_id,
+        youtube_playlist_id=story.youtube_playlist_id,
+        segment_type=story.segment_type or "story",
+        created_at=story.created_at,
+        updated_at=story.updated_at,
+    )
+
+
+@router.patch("/{story_id}", response_model=StoryDetail)
+async def patch_story(story_id: UUID, payload: StoryPatch, db: AsyncSession = Depends(get_db)):
+    """Partially update story title, summary, or timestamps."""
+    result = await db.execute(
+        select(Story, Video.title.label("video_title"))
+        .join(Video, Story.video_id == Video.id)
+        .where(Story.id == story_id)
+    )
+    row = result.one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Story not found")
+
+    story, video_title = row
+
+    if payload.title is not None:
+        story.title = payload.title
+    if payload.summary is not None:
+        story.summary = payload.summary
+
+    times_changed = False
+    if payload.start_time is not None:
+        story.start_time = payload.start_time
+        times_changed = True
+    if payload.end_time is not None:
+        story.end_time = payload.end_time
+        times_changed = True
+
+    if times_changed:
+        story.duration = story.end_time - story.start_time
+        # Clip and thumbnail are stale when timestamps change
+        story.clip_path = None
+        story.thumbnail_path = None
+
+    db.add(story)
+    await db.commit()
+    await db.refresh(story)
+
+    return StoryDetail(
+        id=story.id,
+        video_id=story.video_id,
+        title=story.title,
+        summary=story.summary,
+        start_time=story.start_time,
+        end_time=story.end_time,
+        duration=story.duration,
+        story_index=story.story_index,
+        confidence=story.confidence,
+        transcript_excerpt=story.transcript_excerpt,
+        llm_model=story.llm_model,
+        video_title=video_title or "",
+        has_clip=story.clip_path is not None,
+        has_embedding=story.embedding is not None,
+        clip_path=story.clip_path,
+        thumbnail_path=story.thumbnail_path,
+        youtube_video_id=story.youtube_video_id,
+        youtube_playlist_id=story.youtube_playlist_id,
         segment_type=story.segment_type or "story",
         created_at=story.created_at,
         updated_at=story.updated_at,

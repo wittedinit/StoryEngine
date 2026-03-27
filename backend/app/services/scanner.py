@@ -106,6 +106,7 @@ def scan_downloads(db: Session) -> list[dict]:
                 file_path=path_str,
                 filename=file_path.name,
                 youtube_id=extract_youtube_id(file_path.name),
+                channel_name=file_path.parent.name if file_path.parent != downloads_dir else None,
                 file_hash=file_hash,
                 file_size=stat.st_size,
                 duration=get_duration(file_path),
