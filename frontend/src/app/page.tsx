@@ -31,8 +31,8 @@ function SetupWizard({ setup, onRefresh }: { setup: SetupStatus; onRefresh: () =
       <div className="mb-8">
         <h2 className="text-2xl font-bold mb-2">Welcome to StoryEngine</h2>
         <p className="text-gray-400">
-          Configure a couple of things to get started. StoryEngine will scan your video library,
-          transcribe audio, and use an LLM to detect individual stories within each video.
+          Configure a couple of things to get started. StoryEngine will scan your media library
+          (audio and video files), transcribe them, and use an LLM to detect individual stories within each file.
         </p>
       </div>
 
@@ -49,9 +49,9 @@ function SetupWizard({ setup, onRefresh }: { setup: SetupStatus; onRefresh: () =
 
         {/* Downloads Path */}
         <SetupItem
-          title="Video Library Path"
-          description="Absolute path to the directory containing your video files"
-          placeholder="/path/to/your/videos"
+          title="Media Library Path"
+          description="Absolute path to the directory containing your audio and video files"
+          placeholder="/path/to/your/media"
           settingKey="downloads_dir"
           check={setup.checks.downloads_dir}
           onSaved={onRefresh}
@@ -190,7 +190,7 @@ export default function Dashboard() {
 
       {stats ? (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <StatCard label="Total Videos" value={stats.total_videos} color="text-white" />
+          <StatCard label="Total Files" value={stats.total_videos} color="text-white" />
           <StatCard label="Completed" value={stats.completed_videos} color="text-green-400" />
           <StatCard label="Stories Found" value={stats.total_stories} color="text-blue-400" />
           <StatCard label="In Queue" value={stats.pending_jobs} color="text-yellow-400" />

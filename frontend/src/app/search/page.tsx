@@ -49,7 +49,7 @@ export default function SearchPage() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold">Transcript Search</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Full-text search across all video transcripts
+          Full-text search across all transcripts — audio and video
         </p>
       </div>
 
@@ -75,7 +75,7 @@ export default function SearchPage() {
 
       {searched && (
         <p className="text-sm text-gray-500 mb-4">
-          {total === 0 ? "No results found" : `${total} video${total !== 1 ? "s" : ""} matched`}
+          {total === 0 ? "No results found" : `${total} file${total !== 1 ? "s" : ""} matched`}
         </p>
       )}
 
@@ -112,7 +112,7 @@ export default function SearchPage() {
       {searched && results.length === 0 && !loading && (
         <div className="text-center py-12 text-gray-500">
           <p>No transcripts matched &ldquo;{query}&rdquo;</p>
-          <p className="text-sm mt-2">Try different keywords or check that videos have been transcribed</p>
+          <p className="text-sm mt-2">Try different keywords or check that files have been transcribed</p>
         </div>
       )}
 

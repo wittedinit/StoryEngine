@@ -26,7 +26,7 @@ export default function ReportsPage() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold">Channel Reports</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Per-channel breakdown of videos, stories, and duplicate analysis
+          Per-channel breakdown of media files, stories, and duplicate analysis
         </p>
       </div>
 
@@ -36,8 +36,8 @@ export default function ReportsPage() {
         <div className="text-center py-12 text-gray-500">
           <p className="mb-2">No channels found.</p>
           <p className="text-sm">
-            Channels are automatically detected from folder names in your video library.<br />
-            e.g. <code className="font-mono text-gray-400">/videos/ChannelName/video.mp4</code>
+            Channels are automatically detected from folder names in your media library.<br />
+            e.g. <code className="font-mono text-gray-400">/media/ChannelName/episode.mp3</code> or <code className="font-mono text-gray-400">/media/ChannelName/video.mp4</code>
           </p>
         </div>
       ) : (
@@ -51,7 +51,7 @@ export default function ReportsPage() {
                 <div className="min-w-0 flex-1">
                   <h3 className="font-semibold text-white truncate">{ch.channel}</h3>
                   <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-400">
-                    <span>{ch.video_count} video{ch.video_count !== 1 ? "s" : ""}</span>
+                    <span>{ch.video_count} file{ch.video_count !== 1 ? "s" : ""}</span>
                     <span>{ch.story_count} stor{ch.story_count !== 1 ? "ies" : "y"}</span>
                     <span>{ch.clip_count} clip{ch.clip_count !== 1 ? "s" : ""}</span>
                     {ch.total_duration > 0 && (

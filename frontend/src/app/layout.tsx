@@ -4,7 +4,7 @@ import Sidebar from "@/components/sidebar";
 
 export const metadata: Metadata = {
   title: "StoryEngine",
-  description: "Video story splitting and deduplication engine",
+  description: "Audio and video story splitting and deduplication engine",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

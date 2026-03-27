@@ -68,11 +68,11 @@ export default function VideosPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">Videos ({total})</h2>
+        <h2 className="text-2xl font-bold">Media ({total})</h2>
         <div className="flex items-center gap-2">
           <input
             type="text"
-            placeholder="Search videos..."
+            placeholder="Search media..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm w-56 focus:outline-none focus:border-blue-500"
@@ -96,7 +96,7 @@ export default function VideosPage() {
             onClick={() => setSelected(new Set(videos.map((v) => v.id)))}
             className="text-xs text-blue-400 hover:underline"
           >
-            Select all ({videos.length})
+            Select all ({videos.length} files)
           </button>
           <div className="ml-auto">
             <button
@@ -178,7 +178,7 @@ export default function VideosPage() {
           );
         })}
         {videos.length === 0 && (
-          <p className="text-gray-500 text-center py-8">No videos found. Scan your downloads directory to get started.</p>
+          <p className="text-gray-500 text-center py-8">No files found. Point StoryEngine at your media directory in Settings and click Scan.</p>
         )}
       </div>
     </div>

@@ -342,7 +342,7 @@ export default function StoryDetailPage() {
         </div>
 
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-          <p className="text-sm text-gray-400 mb-2">Source Video</p>
+          <p className="text-sm text-gray-400 mb-2">Source File</p>
           <Link href={`/videos/${story.video_id}`} className="text-blue-400 hover:text-blue-300">
             {story.video_title}
           </Link>

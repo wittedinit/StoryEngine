@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: "grid" },
-  { href: "/videos", label: "Videos", icon: "film" },
+  { href: "/videos", label: "Media", icon: "film" },
   { href: "/stories", label: "Stories", icon: "book" },
   { href: "/search", label: "Search", icon: "search" },
   { href: "/dedup", label: "Dedup", icon: "dedup" },
@@ -38,7 +38,7 @@ export default function Sidebar() {
     <aside className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col min-h-screen">
       <div className="p-4 border-b border-gray-800">
         <h1 className="text-lg font-bold text-white">StoryEngine</h1>
-        <p className="text-xs text-gray-500">Video Story Analyzer</p>
+        <p className="text-xs text-gray-500">Audio & Video Story Analyzer</p>
       </div>
       <nav className="flex-1 p-2">
         {navItems.map((item) => {

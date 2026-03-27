@@ -61,7 +61,7 @@ export default function ChannelReportPage() {
 
   const exportDedupCsv = () => {
     if (!dedup) return;
-    const rows = [["Cluster", "Story Title", "Video", "Duration"]];
+    const rows = [["Cluster", "Story Title", "Source File", "Duration"]];
     dedup.clusters.forEach((cluster, i) => {
       cluster.forEach((s) => {
         rows.push([String(i + 1), s.title, s.video_title, formatTime(s.duration)]);
@@ -94,7 +94,7 @@ export default function ChannelReportPage() {
             activeTab === "videos" ? "border-blue-500 text-blue-400" : "border-transparent text-gray-500 hover:text-gray-300"
           }`}
         >
-          Videos ({videos.length})
+          Files ({videos.length})
         </button>
         <button
           onClick={() => setActiveTab("dedup")}
@@ -132,7 +132,7 @@ export default function ChannelReportPage() {
                 </Link>
               ))}
               {videos.length === 0 && (
-                <p className="text-gray-500 text-center py-8">No videos found in this channel.</p>
+                <p className="text-gray-500 text-center py-8">No files found in this channel.</p>
               )}
             </div>
           )}

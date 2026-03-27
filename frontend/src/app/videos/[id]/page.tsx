@@ -58,7 +58,7 @@ export default function VideoDetailPage() {
     <div>
       <div className="mb-6">
         <Link href="/videos" className="text-sm text-gray-500 hover:text-gray-300 mb-2 inline-block">
-          &larr; Back to Videos
+          &larr; Back to Media
         </Link>
         <div className="flex items-start justify-between gap-4">
           <div>

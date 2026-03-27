@@ -68,17 +68,18 @@ function Code({ children }: { children: React.ReactNode }) {
 }
 
 const toc = [
-  { id: "overview", label: "Overview" },
-  { id: "quickstart", label: "Quick Start" },
+  { id: "what-is-storyengine", label: "What is StoryEngine?" },
+  { id: "quickstart", label: "Installation & Quick Start" },
+  { id: "first-run", label: "First Run Setup" },
   { id: "pipeline", label: "How the Pipeline Works" },
-  { id: "videos", label: "Videos" },
+  { id: "media", label: "Media Library (Audio & Video)" },
   { id: "stories", label: "Stories" },
   { id: "player", label: "In-Browser Player" },
   { id: "splitting", label: "Splitting Clips" },
-  { id: "sponsors", label: "Sponsor Detection" },
+  { id: "exports", label: "Thumbnails, SRT & NFO" },
   { id: "search", label: "Transcript Search" },
   { id: "editing", label: "Editing Stories" },
-  { id: "exports", label: "Thumbnails, SRT & NFO" },
+  { id: "sponsors", label: "Sponsor Detection" },
   { id: "dedup", label: "Deduplication" },
   { id: "reports", label: "Channel Reports" },
   { id: "export", label: "Export & Download" },
@@ -87,7 +88,6 @@ const toc = [
   { id: "batch", label: "Batch Operations" },
   { id: "settings", label: "Settings Reference" },
   { id: "gpu", label: "GPU Acceleration" },
-  { id: "api", label: "API Reference" },
   { id: "troubleshooting", label: "Troubleshooting" },
 ];
 
@@ -96,12 +96,12 @@ export default function ManualPage() {
     <div className="max-w-4xl">
       <div className="mb-8">
         <h2 className="text-2xl font-bold">StoryEngine Manual</h2>
-        <p className="text-sm text-gray-500 mt-1">Complete guide to using StoryEngine</p>
+        <p className="text-sm text-gray-500 mt-1">Complete guide — installation, setup, and all features</p>
       </div>
 
       <div className="flex gap-8">
         {/* Table of contents */}
-        <nav className="hidden lg:block w-44 shrink-0">
+        <nav className="hidden lg:block w-48 shrink-0">
           <div className="sticky top-6">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Contents</p>
             <ul className="space-y-1">
@@ -122,61 +122,129 @@ export default function ManualPage() {
         {/* Content */}
         <div className="flex-1 min-w-0">
 
-          {/* Overview */}
-          <Section id="overview" title="Overview">
+          {/* What is StoryEngine */}
+          <Section id="what-is-storyengine" title="What is StoryEngine?">
             <p className="text-gray-400 mb-4">
-              StoryEngine watches a folder of video files, transcribes them with Whisper, uses a local
-              LLM (via Ollama) to detect natural story boundaries, and presents the results in this web UI.
+              StoryEngine automatically turns your audio and video library into a searchable, navigable collection of stories.
             </p>
             <p className="text-gray-400 mb-4">
-              Once stories are detected you can split them into individual lossless clip files, find
-              duplicate content across your entire library, identify sponsor segments, and export playlists.
+              Point it at a folder — podcasts, recorded lectures, YouTube downloads, interviews, meetings, films, anything — and it will:
             </p>
+            <ol className="list-decimal list-inside text-gray-400 text-sm space-y-2 mb-4">
+              <li><strong className="text-gray-200">Transcribe</strong> every file automatically using Whisper (local, private, no API cost)</li>
+              <li><strong className="text-gray-200">Detect stories</strong> — ask a local LLM to read the transcript and identify where topics change, producing a titled, summarised story for each segment</li>
+              <li><strong className="text-gray-200">Present the results</strong> in this web UI so you can browse, search, and navigate your entire library by topic rather than by file</li>
+              <li><strong className="text-gray-200">Split clips</strong> — cut each story into its own file with no quality loss</li>
+              <li><strong className="text-gray-200">Find duplicates</strong> — identify when the same topic appears across many different files</li>
+            </ol>
+            <Note>
+              StoryEngine works equally well with audio files (podcasts, music, recordings) and video files (YouTube downloads, films, recorded meetings). Mix both freely in the same folder.
+            </Note>
             <Table
-              headers={["Stage", "What happens"]}
+              headers={["Supported formats", ""]}
               rows={[
-                ["Scan", "Watches your video library folder every N minutes, detects new or changed files"],
-                ["Transcribe", "Extracts audio and runs faster-whisper to produce a timestamped transcript"],
-                ["Detect Stories", "Sends transcript to your local LLM to identify story boundaries, titles, and summaries"],
-                ["Detect Sponsors", "Optionally queries SponsorBlock or asks the LLM to find sponsored segments"],
-                ["Split", "Optionally cuts each story into a lossless clip file using ffmpeg -c copy"],
-                ["Embed", "Optionally generates semantic embeddings for each story (used by Dedup)"],
-                ["Dedup", "Finds stories with similar content across your entire library using HNSW"],
+                ["Audio", ".mp3, .m4a, .opus, .flac, .wav"],
+                ["Video", ".mp4, .mkv, .webm, .avi, .mov"],
               ]}
             />
           </Section>
 
-          {/* Quick start */}
-          <Section id="quickstart" title="Quick Start">
-            <SubSection title="1. Start the service">
-              <p className="text-gray-400 text-sm mb-2">
-                Run <Code>docker compose up -d</Code> from the StoryEngine directory.
-                The UI will be available at <Code>http://localhost:3100</Code>.
+          {/* Installation & Quick Start */}
+          <Section id="quickstart" title="Installation & Quick Start">
+            <SubSection title="Requirements">
+              <ul className="list-disc list-inside text-gray-400 text-sm space-y-1 mb-3">
+                <li><strong className="text-gray-200">Docker</strong> — Docker Desktop, OrbStack, or any Docker-compatible runtime</li>
+                <li><strong className="text-gray-200">Ollama</strong> — running on your local network or machine, with at least one LLM model loaded (e.g. <Code>llama3.1:8b</Code>)</li>
+                <li>A folder of audio/video files to analyse</li>
+              </ul>
+              <p className="text-gray-400 text-sm">No GPU is required. Everything runs on CPU. A GPU makes transcription significantly faster but is entirely optional.</p>
+            </SubSection>
+
+            <SubSection title="Step 1 — Clone and start">
+              <pre className="bg-gray-900 border border-gray-800 rounded-lg p-3 text-sm font-mono text-gray-300 overflow-x-auto">
+{`git clone https://github.com/wittedinit/StoryEngine.git
+cd StoryEngine
+docker compose up -d`}
+              </pre>
+              <p className="text-gray-400 text-sm mt-2">
+                This starts six containers: PostgreSQL, Redis, Ollama, backend API, Celery worker, and the Next.js frontend.
+                The first boot downloads images and may take a minute or two.
               </p>
             </SubSection>
-            <SubSection title="2. Configure Ollama">
+
+            <SubSection title="Step 2 — Open the dashboard">
               <p className="text-gray-400 text-sm mb-2">
-                Go to <Link href="/settings" className="text-blue-400 hover:underline">Settings</Link> and
-                enter your Ollama endpoint (e.g. <Code>http://192.168.1.60:11434</Code>). Click
-                &ldquo;Test Connection&rdquo; — if connected, select a model from the dropdown.
+                Visit <Code>http://localhost:3100</Code> in your browser.
+                A setup wizard will appear asking for two settings — complete those and you're ready.
+              </p>
+            </SubSection>
+
+            <SubSection title="Step 3 — Mount your media folder">
+              <p className="text-gray-400 text-sm mb-2">
+                Your media files must be accessible inside the Docker containers. Edit <Code>docker-compose.yml</Code> and add a volume mount to both the <Code>backend</Code> and <Code>worker</Code> services:
+              </p>
+              <pre className="bg-gray-900 border border-gray-800 rounded-lg p-3 text-sm font-mono text-gray-300 overflow-x-auto">
+{`services:
+  backend:
+    volumes:
+      - /your/host/media:/media:ro   # :ro = read-only (StoryEngine never writes here)
+
+  worker:
+    volumes:
+      - /your/host/media:/media:ro`}
+              </pre>
+              <p className="text-gray-400 text-sm mt-2">
+                Then set <strong>Media Library Path</strong> to <Code>/media</Code> in Settings → Paths, or in the setup wizard.
               </p>
               <Note>
-                Story detection works best with a capable model such as <Code>llama3.1:8b</Code> or larger.
-                Smaller models may produce inaccurate story boundaries.
+                Using UYTDownloader? Mount its downloads volume directly:{" "}
+                <Code>uytdownloader_downloads:/media:ro</Code>
               </Note>
             </SubSection>
-            <SubSection title="3. Set your video library path">
-              <p className="text-gray-400 text-sm mb-2">
-                Under <strong>Paths</strong> in Settings, set the <strong>Video Library Path</strong> to
-                the folder inside the container where your videos are mounted (e.g. <Code>/videos</Code>).
-                StoryEngine will never write to or delete files in this folder.
+
+            <SubSection title="Step 4 — Wait for processing">
+              <p className="text-gray-400 text-sm">
+                StoryEngine scans your library automatically every 5 minutes. Trigger an immediate scan from the Dashboard with <strong>Scan Downloads</strong>. Watch progress on the <Link href="/jobs" className="text-blue-400 hover:underline">Jobs</Link> page — each file goes through transcription then story detection.
               </p>
             </SubSection>
-            <SubSection title="4. Wait for automatic processing">
+
+            <SubSection title="Ports">
+              <Table
+                headers={["Service", "Default port"]}
+                rows={[
+                  ["Web UI", "http://localhost:3100"],
+                  ["API", "http://localhost:8100"],
+                  ["API docs (OpenAPI)", "http://localhost:8100/docs"],
+                ]}
+              />
+              <p className="text-gray-400 text-sm">
+                To change ports, copy <Code>.env.default</Code> to <Code>.env</Code> and set <Code>SE_PORT</Code> and <Code>SE_FRONTEND_PORT</Code> before starting.
+              </p>
+            </SubSection>
+          </Section>
+
+          {/* First run setup */}
+          <Section id="first-run" title="First Run Setup">
+            <p className="text-gray-400 text-sm mb-4">
+              On first visit the setup wizard asks for two settings. Both can also be changed later in{" "}
+              <Link href="/settings" className="text-blue-400 hover:underline">Settings</Link>.
+            </p>
+
+            <SubSection title="1. Ollama URL">
               <p className="text-gray-400 text-sm mb-2">
-                StoryEngine scans the library every 5 minutes by default. You can trigger an immediate
-                scan from the Dashboard with the <strong>Scan Now</strong> button. Watch progress on
-                the <Link href="/jobs" className="text-blue-400 hover:underline">Jobs</Link> page.
+                Enter the URL of your Ollama instance — e.g. <Code>http://192.168.1.60:11434</Code> if Ollama is running on another machine, or <Code>http://ollama:11434</Code> if you're using the bundled Ollama container.
+              </p>
+              <p className="text-gray-400 text-sm mb-2">
+                In <Link href="/settings" className="text-blue-400 hover:underline">Settings → LLM & Ollama</Link>, click <strong>Test Connection</strong> to verify connectivity and choose a model from the dropdown.
+              </p>
+              <Note>
+                Story detection quality scales with model capability. <Code>llama3.1:8b</Code> gives good results. Larger models (13b, 70b) give better story boundaries but are slower. Smaller models (3b) may produce inaccurate results.
+              </Note>
+            </SubSection>
+
+            <SubSection title="2. Media Library Path">
+              <p className="text-gray-400 text-sm">
+                The absolute path <em>inside the container</em> where your audio/video files are mounted (e.g. <Code>/media</Code>). StoryEngine only reads from this location — it never writes or deletes files here.
               </p>
             </SubSection>
           </Section>
@@ -184,51 +252,89 @@ export default function ManualPage() {
           {/* Pipeline */}
           <Section id="pipeline" title="How the Pipeline Works">
             <p className="text-gray-400 text-sm mb-4">
-              Each video goes through a sequential Celery pipeline. Stages run on separate worker queues
-              so GPU-intensive transcription never blocks other work.
+              Each file is processed through a sequential pipeline. Stages run on separate worker queues so GPU-heavy transcription never blocks lightweight tasks.
             </p>
             <Table
-              headers={["Queue", "Concurrency", "What runs here"]}
+              headers={["Stage", "What happens"]}
               rows={[
-                ["scan, pipeline", "2 (configurable)", "File scanning, audio extraction, ffmpeg clip splitting, ZIP assembly"],
-                ["gpu", "1 (serialised)", "Whisper transcription (prevents VRAM contention)"],
-                ["llm", "2", "Ollama story detection, sponsor detection, embeddings"],
+                ["Scan", "File discovered, hash computed, added to database as 'discovered'"],
+                ["Extract audio", "ffmpeg extracts a 16kHz mono WAV to a temporary work directory"],
+                ["Transcribe", "faster-whisper + Silero VAD produces a word-level timestamped transcript"],
+                ["Detect stories", "Transcript sent to Ollama LLM in chunks; returns titled, summarised stories with timestamps"],
+                ["Detect sponsors", "(Optional) SponsorBlock API or LLM identifies sponsored/non-content segments"],
+                ["Split clips", "(Optional) ffmpeg -c copy cuts each story into its own file — lossless, instant"],
+                ["Embed", "(Optional) Ollama generates semantic vectors for each story, enabling dedup"],
               ]}
             />
-            <SubSection title="Stage statuses">
+            <SubSection title="Worker queues">
+              <Table
+                headers={["Queue", "Concurrency", "Runs"]}
+                rows={[
+                  ["scan, pipeline", "2 (configurable)", "Scanning, ffmpeg extraction, clip splitting, thumbnails, ZIP, YouTube uploads"],
+                  ["gpu", "1 (serialised)", "Whisper transcription — serialised to prevent VRAM contention"],
+                  ["llm", "2", "Ollama story detection, sponsor detection, embeddings"],
+                ]}
+              />
+            </SubSection>
+            <SubSection title="Job statuses">
               <p className="text-gray-400 text-sm">
-                Each stage shows one of: <Code>pending</Code> → <Code>running</Code> → <Code>completed</Code> / <Code>failed</Code>.
-                If a stage fails, the pipeline stops and the video is marked <Code>failed</Code>. You can re-process
-                any video from its detail page.
+                Watch the <Link href="/jobs" className="text-blue-400 hover:underline">Jobs</Link> page to see every stage progressing through{" "}
+                <Code>pending</Code> → <Code>running</Code> → <Code>completed</Code> or <Code>failed</Code>.
+                If a stage fails, the pipeline stops and the file is marked <Code>failed</Code>. Fix the issue (usually an Ollama or ffmpeg problem) then re-process from the file detail page.
               </p>
             </SubSection>
           </Section>
 
-          {/* Videos */}
-          <Section id="videos" title="Videos">
+          {/* Media library */}
+          <Section id="media" title="Media Library (Audio & Video)">
             <p className="text-gray-400 text-sm mb-4">
-              The <Link href="/videos" className="text-blue-400 hover:underline">Videos</Link> page lists
-              all media files found in your library. Each card shows the processing status,
-              number of detected stories, and file format.
+              The <Link href="/videos" className="text-blue-400 hover:underline">Media</Link> page lists every file StoryEngine has found. Audio and video files are treated identically throughout the pipeline.
             </p>
-            <SubSection title="Video statuses">
+
+            <SubSection title="Supported file types">
+              <p className="text-gray-400 text-sm mb-2">
+                By default StoryEngine picks up: <Code>.mp4</Code> <Code>.mkv</Code> <Code>.webm</Code> <Code>.avi</Code> <Code>.mov</Code> <Code>.m4a</Code> <Code>.mp3</Code> <Code>.opus</Code> <Code>.flac</Code> <Code>.wav</Code>
+              </p>
+              <p className="text-gray-400 text-sm">
+                Files without an audio stream (silent video, corrupt files) are detected via ffprobe and silently skipped.
+              </p>
+            </SubSection>
+
+            <SubSection title="File statuses">
               <Table
                 headers={["Status", "Meaning"]}
                 rows={[
-                  ["discovered", "File found, not yet processed"],
-                  ["processing", "Pipeline is running"],
+                  ["discovered", "Found on disk, not yet processed"],
+                  ["processing", "Pipeline is currently running for this file"],
                   ["completed", "All pipeline stages finished successfully"],
-                  ["failed", "At least one stage failed — see the Jobs page for details"],
+                  ["failed", "One or more stages failed — check Jobs for the error"],
                   ["ignored", "Manually excluded from processing"],
                 ]}
               />
             </SubSection>
+
             <SubSection title="Channel detection">
+              <p className="text-gray-400 text-sm mb-2">
+                StoryEngine infers a <strong>channel</strong> from each file's immediate parent folder name. This is how podcast feeds, YouTube channels, or recording series are grouped automatically.
+              </p>
+              <p className="text-gray-400 text-sm mb-2">Examples:</p>
+              <Table
+                headers={["File path", "Channel"]}
+                rows={[
+                  ["/media/Lex Fridman/ep123.mp4", "Lex Fridman"],
+                  ["/media/My Podcast/S01E04.mp3", "My Podcast"],
+                  ["/media/lecture.mp4", "(none — root level)"],
+                ]}
+              />
               <p className="text-gray-400 text-sm">
-                StoryEngine infers a channel name from the immediate parent directory of each video file.
-                For example, <Code>/videos/TechChannel/video.mp4</Code> → channel <Code>TechChannel</Code>.
-                Videos in the root library folder have no channel. Channel names are used by the
-                <Link href="/reports" className="text-blue-400 hover:underline ml-1">Reports</Link> page.
+                Channels appear in the <Link href="/reports" className="text-blue-400 hover:underline">Reports</Link> section.
+              </p>
+            </SubSection>
+
+            <SubSection title="Re-processing a file">
+              <p className="text-gray-400 text-sm">
+                Open a file's detail page and click <strong>Reprocess</strong> to re-run the full pipeline. Useful after changing the Whisper model, LLM model, or pipeline settings.
+                For bulk re-processing, use the multi-select mode on the Media page.
               </p>
             </SubSection>
           </Section>
@@ -236,194 +342,149 @@ export default function ManualPage() {
           {/* Stories */}
           <Section id="stories" title="Stories">
             <p className="text-gray-400 text-sm mb-4">
-              Stories are segments of a video identified by the LLM as distinct topics or narratives.
-              Each story has a title, a short summary, and a start/end timestamp.
+              A <strong>story</strong> is a segment of a file that the LLM has identified as a distinct topic or narrative. Each story gets:
             </p>
+            <ul className="list-disc list-inside text-gray-400 text-sm space-y-1 mb-4">
+              <li>A <strong>title</strong> and short <strong>summary</strong> written by the LLM</li>
+              <li>A <strong>start time</strong> and <strong>end time</strong> within the source file</li>
+              <li>An optional <strong>type</strong> tag — <Code>story</Code>, <Code>sponsor</Code>, <Code>intro</Code>, <Code>outro</Code>, etc.</li>
+            </ul>
             <p className="text-gray-400 text-sm mb-4">
-              On a video&apos;s detail page you will see a coloured timeline bar showing where each story
-              falls within the video. Yellow segments are detected sponsor/non-content segments.
+              On a file's detail page you'll see a colour-coded timeline bar showing where stories fall. Yellow segments are non-content (sponsors, intros, outros).
             </p>
             <Note>
-              Story quality depends heavily on your LLM model and the transcript quality. If stories look
-              wrong, try a larger model or re-process the video with a better Whisper model.
+              Story quality depends on your LLM model and transcript quality. A larger model produces better story boundaries. If stories look wrong, try re-processing with a stronger model.
             </Note>
           </Section>
 
           {/* Player */}
           <Section id="player" title="In-Browser Player">
             <p className="text-gray-400 text-sm mb-4">
-              When a video file is accessible from the backend container, a <strong>Player</strong> tab
-              appears on the video detail page. The player streams the original file directly through
-              the backend using byte-range requests, so seeking works instantly without buffering the
-              whole file.
+              When a media file is accessible inside the container, a <strong>Player</strong> tab appears on the file detail page. The player streams the original file using HTTP byte-range requests — seeking works instantly.
             </p>
-            <SubSection title="Story navigation">
-              <p className="text-gray-400 text-sm mb-2">
-                Below the video element is a colour-coded timeline bar matching the one at the top of
-                the page. Click anywhere on the bar to jump to that point in the video, or click a
-                specific coloured segment to jump directly to the start of that story.
-              </p>
-              <p className="text-gray-400 text-sm">
-                A story list below the bar lets you navigate by title — click any row to seek to
-                that story&apos;s start time.
-              </p>
+            <SubSection title="Navigating by story">
+              <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
+                <li>Click anywhere on the story timeline bar to jump to that point</li>
+                <li>Click a coloured story segment on the bar to jump to that story's start</li>
+                <li>Click any row in the story list below the bar to seek directly to it</li>
+              </ul>
             </SubSection>
             <Note>
-              The Player tab is hidden if the video file path is not mounted and accessible inside
-              the backend container. Ensure your <strong>Video Library Path</strong> is correctly
-              configured and the volume is mounted.
+              The Player tab only appears when <strong>Media Library Path</strong> is set and the file is accessible from inside the backend container. Audio-only files play fine — the browser's built-in audio player is used instead of a video element.
             </Note>
           </Section>
 
           {/* Splitting */}
           <Section id="splitting" title="Splitting Clips">
             <p className="text-gray-400 text-sm mb-4">
-              StoryEngine can cut each story into a separate video file using <Code>ffmpeg -c copy</Code>,
-              which is completely lossless and very fast (no re-encoding). Clips are saved to the
-              <strong> Output Directory</strong> configured in Settings (default: <Code>/segments</Code>).
+              StoryEngine can cut each story into its own file using <Code>ffmpeg -c copy</Code> — completely lossless and very fast (no re-encoding). The original file format and quality are preserved. Audio files produce audio clips; video files produce video clips.
             </p>
             <SubSection title="How to split">
-              <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
-                <li>
-                  <strong>One story:</strong> open a story detail page and click <strong>Split Clip</strong>
-                </li>
-                <li>
-                  <strong>All stories in a video:</strong> open a video detail page and click <strong>Split All Stories</strong>
-                </li>
-                <li>
-                  <strong>Automatically:</strong> enable <strong>Auto-Split Clips</strong> in Settings → Pipeline
-                  to split every story as soon as it is detected
-                </li>
-                <li>
-                  <strong>Bulk download:</strong> select multiple stories on the Stories page and click
-                  <strong> Download ZIP</strong>
-                </li>
-              </ul>
+              <Table
+                headers={["Method", "How"]}
+                rows={[
+                  ["One story", "Open a story detail page → click Split Clip"],
+                  ["All stories in a file", "Open a file detail page → click Split All"],
+                  ["Automatically after detection", "Enable Auto-Split Clips in Settings → Pipeline"],
+                  ["Bulk download", "Select stories on the Stories page → Download ZIP"],
+                ]}
+              />
             </SubSection>
-            <SubSection title="Clip file naming">
+            <SubSection title="Output location">
               <p className="text-gray-400 text-sm">
-                Clips are stored as <Code>{"{video_id}/{index:03d}_{title_slug}.{ext}"}</Code> relative to
-                the output directory. The original file extension is preserved.
+                Clips are saved to the <strong>Output Directory</strong> (default <Code>/segments</Code>, configurable in Settings → Paths). They are stored as <Code>{"{file_id}/{index:03d}_{title_slug}.{ext}"}</Code> preserving the original extension.
               </p>
             </SubSection>
             <Warn>
-              The original video files are <strong>never modified or deleted</strong>. StoryEngine only reads
-              them. Only split clips are written to the output directory.
-            </Warn>
-          </Section>
-
-          {/* Search */}
-          <Section id="search" title="Transcript Search">
-            <p className="text-gray-400 text-sm mb-4">
-              The <Link href="/search" className="text-blue-400 hover:underline">Search</Link> page
-              lets you search across every transcript in your library using PostgreSQL full-text search.
-              Results are ranked by relevance and include a highlighted excerpt showing the matched
-              passage in context.
-            </p>
-            <SubSection title="How to use">
-              <p className="text-gray-400 text-sm mb-2">
-                Type a word or phrase in the search box. Results appear as you type (after a short
-                debounce). Each result links directly to the video detail page for that transcript.
-              </p>
-            </SubSection>
-            <SubSection title="Search tips">
-              <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
-                <li>Multi-word queries find videos that contain <em>all</em> words, not necessarily adjacent</li>
-                <li>Search is language-aware (English stemming by default) — searching <em>running</em> also matches <em>run</em></li>
-                <li>Results are ranked by frequency and proximity of the search terms</li>
-              </ul>
-            </SubSection>
-            <Note>
-              Search only covers videos that have been fully transcribed. Videos still in the
-              pipeline will not appear until transcription completes.
-            </Note>
-          </Section>
-
-          {/* Editing stories */}
-          <Section id="editing" title="Editing Stories">
-            <p className="text-gray-400 text-sm mb-4">
-              Story titles, summaries, and timestamps can be corrected manually. Open a story detail
-              page and click <strong>Edit</strong> in the top-right corner.
-            </p>
-            <Table
-              headers={["Field", "Notes"]}
-              rows={[
-                ["Title", "Free text — rename the story to anything you like"],
-                ["Summary", "Free text — overwrite the LLM summary"],
-                ["Start time (m:ss)", "Fractional seconds supported (e.g. 1:23.5)"],
-                ["End time (m:ss)", "Must be after start time"],
-              ]}
-            />
-            <Warn>
-              Changing the start or end time clears the existing split clip and thumbnail for that
-              story (they would be stale). Re-split the clip and regenerate the thumbnail after saving
-              a timestamp edit.
+              The original audio/video files are <strong>never modified or deleted</strong>. StoryEngine only reads them. Clips are new files written to the Output Directory.
             </Warn>
           </Section>
 
           {/* Thumbnails, SRT, NFO */}
           <Section id="exports" title="Thumbnails, SRT & NFO">
             <p className="text-gray-400 text-sm mb-4">
-              Once a story has been split into a clip, additional export formats become available
-              from the story detail page.
+              Once a story has been split into a clip, additional export formats are available from the story detail page. These are useful for getting clips into media servers like Jellyfin, Kodi, or Plex.
             </p>
             <SubSection title="Thumbnail">
-              <p className="text-gray-400 text-sm mb-2">
-                Click <strong>Generate Thumbnail</strong> to extract a JPEG frame from the video at
-                the story&apos;s midpoint using <Code>ffmpeg -frames:v 1 -q:v 2</Code>. The thumbnail
-                is stored alongside the clip and displayed at the top of the story detail page.
-              </p>
               <p className="text-gray-400 text-sm">
-                Click <strong>Regenerate Thumbnail</strong> at any time to replace it with a
-                freshly extracted frame.
+                Click <strong>Generate Thumbnail</strong> to extract a JPEG frame at the story's midpoint using ffmpeg. For audio-only clips, thumbnails will not be generated (no video frame to extract). Regenerate at any time to replace the existing image.
               </p>
             </SubSection>
             <SubSection title="SRT subtitles">
               <p className="text-gray-400 text-sm">
-                Click <strong>SRT</strong> to download a subtitle file for the story clip. Timestamps
-                are absolute (matching the clip file), so the subtitles sync correctly in any media
-                player. Load the <Code>.srt</Code> file as an external subtitle track in VLC, Plex,
-                Jellyfin, or any compatible player.
+                Download a <Code>.srt</Code> subtitle file for the clip. Timestamps are absolute and aligned with the clip file, so they sync in any media player (VLC, Plex, Jellyfin). Load as an external subtitle track.
               </p>
             </SubSection>
-            <SubSection title="NFO (Jellyfin / Kodi)">
+            <SubSection title="NFO metadata">
               <p className="text-gray-400 text-sm">
-                Click <strong>NFO</strong> to download an <Code>&lt;episodedetails&gt;</Code> XML file
-                compatible with Jellyfin and Kodi. Place the <Code>.nfo</Code> file in the same
-                folder as the clip with the same base name and your media server will automatically
-                use the title, summary, and timestamps as metadata.
+                Download a <Code>.nfo</Code> file in Kodi/Jellyfin <Code>&lt;episodedetails&gt;</Code> format. Place it in the same folder as the clip with the same base filename and your media server will use the StoryEngine title and summary as metadata.
               </p>
             </SubSection>
           </Section>
 
-          {/* Sponsor detection */}
-          <Section id="sponsors" title="Sponsor Detection">
+          {/* Search */}
+          <Section id="search" title="Transcript Search">
             <p className="text-gray-400 text-sm mb-4">
-              StoryEngine can identify sponsor segments, intros, outros, and filler in two ways:
+              The <Link href="/search" className="text-blue-400 hover:underline">Search</Link> page lets you find any spoken word or phrase across all transcribed files instantly, using PostgreSQL full-text search.
             </p>
-            <SubSection title="SponsorBlock (YouTube videos only)">
+            <SubSection title="How to use it">
               <p className="text-gray-400 text-sm mb-2">
-                Queries the public SponsorBlock API using the YouTube video ID parsed from the filename
-                (e.g. <Code>My Video [dQw4w9WgXcQ].mp4</Code>). This is highly accurate for popular
-                YouTube content, as it uses crowdsourced timestamps.
-              </p>
-              <p className="text-gray-400 text-sm">
-                Categories detected: <Code>sponsor</Code>, <Code>selfpromo</Code>, <Code>interaction</Code>,
-                <Code> intro</Code>, <Code>outro</Code>, <Code>preview</Code>, <Code>filler</Code>
+                Type any word or phrase. Results appear live as you type. Each result shows the file name and a highlighted excerpt with the matched words in bold. Click a result to open that file's detail page.
               </p>
             </SubSection>
-            <SubSection title="LLM detection (any video)">
+            <SubSection title="Tips">
+              <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
+                <li>Multi-word queries find files containing <em>all</em> the words (in any order, not necessarily adjacent)</li>
+                <li>Search is stemmed — searching <em>running</em> also matches <em>run</em>, <em>runs</em></li>
+                <li>Results are ranked by term frequency and proximity</li>
+                <li>Only files that have been fully transcribed appear in results</li>
+              </ul>
+            </SubSection>
+          </Section>
+
+          {/* Editing */}
+          <Section id="editing" title="Editing Stories">
+            <p className="text-gray-400 text-sm mb-4">
+              LLM-generated titles, summaries, and timestamps can all be corrected manually. Open a story detail page and click <strong>Edit</strong> in the top-right corner.
+            </p>
+            <Table
+              headers={["Field", "Notes"]}
+              rows={[
+                ["Title", "Rename the story to anything you like"],
+                ["Summary", "Overwrite the LLM-generated summary"],
+                ["Start time (m:ss)", "Use decimal seconds — e.g. 12:34.5"],
+                ["End time (m:ss)", "Must be after the start time"],
+              ]}
+            />
+            <Warn>
+              Changing start or end timestamps clears the existing split clip and thumbnail for that story (they would be out of sync). Re-split and regenerate the thumbnail after saving a timestamp edit.
+            </Warn>
+          </Section>
+
+          {/* Sponsors */}
+          <Section id="sponsors" title="Sponsor Detection">
+            <p className="text-gray-400 text-sm mb-4">
+              StoryEngine can identify sponsored, promotional, intro, outro, and filler segments and either tag, exclude, or save them separately.
+            </p>
+            <SubSection title="SponsorBlock (YouTube files only)">
+              <p className="text-gray-400 text-sm mb-2">
+                When a file's name contains a YouTube ID (e.g. <Code>My Video [dQw4w9WgXcQ].mp4</Code>), StoryEngine queries the public SponsorBlock API for crowdsourced sponsor timestamps. This is highly accurate for popular YouTube content.
+              </p>
               <p className="text-gray-400 text-sm">
-                Sends the transcript to your LLM and asks it to identify promotional language. Works for
-                non-YouTube content but is less precise than crowdsourced data.
+                Categories: <Code>sponsor</Code>, <Code>selfpromo</Code>, <Code>interaction</Code>, <Code>intro</Code>, <Code>outro</Code>, <Code>preview</Code>, <Code>filler</Code>
+              </p>
+            </SubSection>
+            <SubSection title="LLM detection (any file)">
+              <p className="text-gray-400 text-sm">
+                For podcasts, audio recordings, and any file without a YouTube ID, the LLM reads the transcript and identifies promotional language. Less precise than crowdsourced data but works on any content.
               </p>
             </SubSection>
             <SubSection title="Sponsor actions">
               <Table
                 headers={["Action", "Behaviour"]}
                 rows={[
-                  ["mark", "Sponsor segments appear as yellow bars on the timeline and are tagged in story lists — no files are changed"],
-                  ["skip", "Sponsor segments are excluded when auto-splitting (story clips only, no ads)"],
+                  ["mark", "Sponsor segments appear as yellow bars on the timeline and are tagged in lists — files unchanged"],
+                  ["skip", "Sponsor segments are excluded when auto-splitting (clips contain story content only)"],
                   ["split_out", "Sponsor segments are saved as separate clip files in segments/sponsors/"],
                 ]}
               />
@@ -433,52 +494,40 @@ export default function ManualPage() {
           {/* Dedup */}
           <Section id="dedup" title="Deduplication">
             <p className="text-gray-400 text-sm mb-4">
-              The <Link href="/dedup" className="text-blue-400 hover:underline">Dedup</Link> page
-              finds stories with similar content across your entire video library using semantic
-              embeddings and an HNSW nearest-neighbour index.
+              The <Link href="/dedup" className="text-blue-400 hover:underline">Dedup</Link> page finds stories with similar content across your entire library using semantic embeddings. It's useful for finding re-runs, reposts, or the same topic covered multiple times across different shows.
             </p>
             <SubSection title="How it works">
               <ol className="list-decimal list-inside text-gray-400 text-sm space-y-1">
-                <li>Click <strong>Embed All Stories</strong> to generate vector embeddings for all stories via Ollama</li>
-                <li>StoryEngine builds an HNSW index (USearch) from all embeddings</li>
+                <li>Click <strong>Embed All Stories</strong> — this sends each story's text to Ollama to generate a semantic vector</li>
+                <li>StoryEngine builds an HNSW nearest-neighbour index from all vectors</li>
                 <li>Stories closer than the <strong>Similarity Threshold</strong> are grouped into clusters</li>
                 <li>Adjust the threshold slider and click <strong>Apply</strong> to re-cluster without re-embedding</li>
               </ol>
             </SubSection>
             <SubSection title="Threshold guidance">
               <Table
-                headers={["Threshold", "Sensitivity"]}
+                headers={["Threshold", "What it finds"]}
                 rows={[
-                  ["0.95+", "Near-identical — same clip re-uploaded"],
+                  ["0.95+", "Near-identical — same clip re-uploaded or duplicated"],
                   ["0.85–0.95", "Very similar topic and wording (default)"],
-                  ["0.75–0.85", "Broadly similar topic, different wording"],
+                  ["0.75–0.85", "Broadly similar topic, different phrasing"],
                   ["< 0.75", "May produce false positives"],
                 ]}
               />
             </SubSection>
             <Note>
-              Embeddings require Ollama to be configured with an embed model (default: <Code>nomic-embed-text</Code>).
-              Enable <strong>Auto-Embed Stories</strong> in Settings to embed automatically after detection.
+              Embeddings require Ollama to have an embed model available (default: <Code>nomic-embed-text</Code>). Run <Code>ollama pull nomic-embed-text</Code> on your Ollama host first. Enable <strong>Auto-Embed Stories</strong> in Settings to embed automatically after each detection run.
             </Note>
           </Section>
 
           {/* Reports */}
           <Section id="reports" title="Channel Reports">
             <p className="text-gray-400 text-sm mb-4">
-              The <Link href="/reports" className="text-blue-400 hover:underline">Reports</Link> page
-              provides per-channel breakdowns of your video library.
+              The <Link href="/reports" className="text-blue-400 hover:underline">Reports</Link> page shows per-channel breakdowns: how many files, stories, and split clips each channel has, and the total duration.
             </p>
-            <SubSection title="Channel detection">
-              <p className="text-gray-400 text-sm">
-                Channels are inferred from the parent folder name of each video file. Videos in
-                the root library folder are grouped under <Code>(root)</Code>.
-              </p>
-            </SubSection>
-            <SubSection title="Per-channel dedup report">
+            <SubSection title="Scoped dedup">
               <p className="text-gray-400 text-sm mb-2">
-                Click <strong>Dedup</strong> on any channel card to run a scoped duplicate analysis
-                across only that channel&apos;s videos. This is useful for finding re-uploads or
-                repeated segments within a single creator&apos;s content.
+                Click <strong>Dedup</strong> on any channel card to run a duplicate analysis scoped to just that channel. This is useful for finding re-runs or repeated segments within a single podcast or creator's content.
               </p>
               <p className="text-gray-400 text-sm">
                 The report can be exported as a CSV file for external analysis.
@@ -490,35 +539,20 @@ export default function ManualPage() {
           <Section id="export" title="Export & Download">
             <SubSection title="Playlist export (M3U8 / JSON)">
               <p className="text-gray-400 text-sm mb-2">
-                Playlists can be exported from three places:
+                Export playlists from three places:
               </p>
               <ul className="list-disc list-inside text-gray-400 text-sm space-y-1 mb-2">
-                <li>
-                  <strong>Video detail page</strong> — export a playlist of all stories in that video
-                </li>
-                <li>
-                  <strong>Stories page</strong> — select stories and export a custom playlist
-                </li>
-                <li>
-                  <strong>Dedup page</strong> — export a playlist for a duplicate cluster
-                </li>
+                <li><strong>File detail page</strong> — export a playlist of all stories in that file</li>
+                <li><strong>Stories page</strong> — select stories and export a custom playlist</li>
+                <li><strong>Dedup page</strong> — export a playlist for a duplicate cluster</li>
               </ul>
               <p className="text-gray-400 text-sm">
-                <strong>M3U8</strong> playlists work directly in VLC, mpv, and any media player that
-                supports HTTP streams. They stream clips directly from StoryEngine over HTTP.
-                <strong> JSON</strong> playlists are machine-readable manifests with full story metadata.
+                <strong>M3U8</strong> playlists stream clips directly from StoryEngine over HTTP — open in VLC, mpv, or any IPTV player. <strong>JSON</strong> playlists are machine-readable manifests with full story metadata.
               </p>
-              <Note>
-                M3U8 playlists require StoryEngine to be running and accessible at the URL used when the
-                playlist was exported. Only stories with split clips appear in the playlist.
-              </Note>
             </SubSection>
             <SubSection title="Bulk ZIP download">
               <p className="text-gray-400 text-sm">
-                Select multiple stories on the Stories page and click <strong>Download ZIP</strong>.
-                StoryEngine assembles a ZIP archive of the clip files in the background.
-                You will see a progress indicator; the download starts automatically when ready.
-                Only stories that have already been split into clips are included.
+                Select multiple stories on the Stories page and click <strong>Download ZIP</strong>. The backend assembles the ZIP in the background and the browser downloads it automatically when ready. Only stories with split clips are included.
               </p>
             </SubSection>
           </Section>
@@ -526,38 +560,23 @@ export default function ManualPage() {
           {/* YouTube */}
           <Section id="youtube" title="YouTube Integration">
             <p className="text-gray-400 text-sm mb-4">
-              StoryEngine can upload story clips to YouTube and organise them into playlists automatically.
-              The <Link href="/youtube" className="text-blue-400 hover:underline">YouTube</Link> page
-              manages the OAuth connection and bulk upload controls.
+              StoryEngine can upload story clips to YouTube and organise them into playlists automatically. Manage the connection on the <Link href="/youtube" className="text-blue-400 hover:underline">YouTube</Link> page.
             </p>
-            <SubSection title="Setup">
-              <ol className="list-decimal list-inside text-gray-400 text-sm space-y-1 mb-2">
-                <li>
-                  Create a project in{" "}
-                  <strong>Google Cloud Console</strong>, enable the YouTube Data API v3, and create
-                  OAuth 2.0 credentials (Desktop or Web App type)
-                </li>
-                <li>
-                  Add <Code>http://localhost:8100/api/v1/youtube/oauth/callback</Code> as an
-                  authorised redirect URI in Google Cloud Console
-                </li>
-                <li>
-                  Go to <Link href="/settings" className="text-blue-400 hover:underline">Settings → YouTube</Link> and
-                  enter your Client ID and Client Secret
-                </li>
-                <li>
-                  Go to <Link href="/youtube" className="text-blue-400 hover:underline">YouTube</Link> and
-                  click <strong>Connect YouTube</strong> to complete the OAuth flow
-                </li>
+            <SubSection title="Setup (one-time)">
+              <ol className="list-decimal list-inside text-gray-400 text-sm space-y-1 mb-3">
+                <li>In <a href="https://console.cloud.google.com" className="text-blue-400 hover:underline" target="_blank" rel="noreferrer">Google Cloud Console</a>, create a project, enable the YouTube Data API v3, and create OAuth 2.0 credentials</li>
+                <li>Add <Code>http://localhost:8100/api/v1/youtube/oauth/callback</Code> as an authorised redirect URI</li>
+                <li>In <Link href="/settings" className="text-blue-400 hover:underline">Settings → YouTube</Link>, enter your Client ID and Client Secret</li>
+                <li>On the <Link href="/youtube" className="text-blue-400 hover:underline">YouTube page</Link>, click <strong>Connect YouTube</strong> and complete the Google OAuth flow</li>
               </ol>
             </SubSection>
-            <SubSection title="Uploading clips">
+            <SubSection title="Uploading">
               <Table
                 headers={["Method", "How"]}
                 rows={[
-                  ["Single clip", "Open a story detail page → click Upload to YouTube"],
+                  ["Single clip", "Story detail page → Upload to YouTube"],
                   ["All unuploaded clips", "YouTube page → Upload All Clips to YouTube"],
-                  ["Auto on split", "Enable Auto-Upload in Settings → YouTube"],
+                  ["Automatically on split", "Enable Auto-Upload in Settings → YouTube"],
                 ]}
               />
             </SubSection>
@@ -565,106 +584,59 @@ export default function ManualPage() {
               <Table
                 headers={["Mode", "Behaviour"]}
                 rows={[
-                  ["per_video", "Creates one YouTube playlist per source video title; each story clip is added to it"],
-                  ["per_channel", "Creates one playlist per channel folder; all stories from that channel share it"],
-                  ["none", "Clips are uploaded without being added to any playlist"],
+                  ["per_video", "One YouTube playlist per source file title"],
+                  ["per_channel", "One playlist per channel folder"],
+                  ["none", "Clips uploaded with no playlist assignment"],
                 ]}
               />
             </SubSection>
-            <SubSection title="Privacy">
-              <p className="text-gray-400 text-sm">
-                Configure the default privacy setting (<Code>public</Code>, <Code>unlisted</Code>, or
-                <Code>private</Code>) in <Link href="/settings" className="text-blue-400 hover:underline">Settings → YouTube</Link>.
-                This applies to all uploads from StoryEngine.
-              </p>
-            </SubSection>
             <Warn>
-              YouTube upload is purely <strong>additive</strong>. Your original video files and local
-              clip files are <strong>never deleted or modified</strong>. Uploads create a separate copy
-              on YouTube. You control your local library and your YouTube channel independently.
+              YouTube upload is purely <strong>additive</strong>. Your original audio/video files and local clip files are <strong>never deleted or modified</strong>. Uploads are a copy. You control your local library and YouTube independently.
             </Warn>
-            <Note>
-              Disconnect at any time via the YouTube page. Existing uploaded videos remain on YouTube
-              after disconnecting — they are not deleted. The refresh token stored in Settings is
-              removed, requiring a new OAuth flow to reconnect.
-            </Note>
           </Section>
 
           {/* Webhooks */}
           <Section id="webhooks" title="Webhooks">
             <p className="text-gray-400 text-sm mb-4">
-              Webhooks let StoryEngine send HTTP POST notifications to external services whenever
-              pipeline events occur. Configure them on the{" "}
-              <Link href="/webhooks" className="text-blue-400 hover:underline">Webhooks</Link> page.
+              Webhooks let StoryEngine POST notifications to any external URL when pipeline events occur. Configure them on the <Link href="/webhooks" className="text-blue-400 hover:underline">Webhooks</Link> page.
             </p>
-            <SubSection title="Supported events">
-              <Table
-                headers={["Event", "When it fires"]}
-                rows={[
-                  ["job_completed", "A full processing pipeline completes successfully for a video"],
-                  ["job_failed", "A pipeline stage fails"],
-                  ["story_detected", "Story detection finishes for a video (includes story count)"],
-                  ["thumbnail_generated", "A thumbnail is generated for a story"],
-                  ["youtube_uploaded", "A clip is successfully uploaded to YouTube"],
-                ]}
-              />
-            </SubSection>
-            <SubSection title="Payload format">
-              <p className="text-gray-400 text-sm mb-2">
-                All webhook calls send a JSON body with at minimum:
-              </p>
-              <pre className="bg-gray-900 border border-gray-800 rounded-lg p-3 text-sm font-mono text-gray-300 overflow-x-auto mb-2">
-                {`{
-  "event": "job_completed",
-  "timestamp": "2025-01-15T12:34:56Z",
-  ...event-specific fields...
-}`}
-              </pre>
-            </SubSection>
-            <SubSection title="HMAC signature">
+            <Table
+              headers={["Event", "When it fires"]}
+              rows={[
+                ["job_completed", "Full pipeline completes successfully for a file"],
+                ["job_failed", "A pipeline stage fails"],
+                ["story_detected", "Story detection finishes (includes story count)"],
+                ["thumbnail_generated", "A thumbnail is generated for a story"],
+                ["youtube_uploaded", "A clip is uploaded to YouTube"],
+              ]}
+            />
+            <SubSection title="HMAC signing (optional)">
               <p className="text-gray-400 text-sm">
-                If you configure a secret for a webhook, every call will include an
-                <Code> X-StoryEngine-Signature</Code> header with a <Code>sha256=</Code>-prefixed
-                hex digest. Compute <Code>HMAC-SHA256(secret, raw_body)</Code> on your server and
-                compare to verify the request is genuine.
+                Set a secret on a webhook to enable HMAC-SHA256 request signing. Every call will include an <Code>X-StoryEngine-Signature: sha256=...</Code> header. On your server, compute <Code>HMAC-SHA256(secret, raw_body)</Code> and compare to verify the request is genuine.
               </p>
             </SubSection>
-            <SubSection title="Test button">
+            <SubSection title="Testing">
               <p className="text-gray-400 text-sm">
-                Click <strong>Test</strong> on any webhook card to send a test payload immediately.
-                The UI shows the HTTP status code returned or any network error, making it easy
-                to verify your endpoint is reachable and accepting requests.
+                Click <strong>Test</strong> on any webhook card to send a test payload immediately and see the HTTP response code.
               </p>
             </SubSection>
           </Section>
 
-          {/* Batch operations */}
+          {/* Batch */}
           <Section id="batch" title="Batch Operations">
             <SubSection title="Batch reprocess">
-              <p className="text-gray-400 text-sm mb-2">
-                On the <Link href="/videos" className="text-blue-400 hover:underline">Videos</Link> page,
-                click <strong>Select</strong> to enter selection mode. Check individual videos or use
-                <strong> Select all</strong> to choose all visible videos. Then click
-                <strong> Reprocess Selected</strong> to re-run the full pipeline on every selected video.
-              </p>
               <p className="text-gray-400 text-sm">
-                Useful after updating the Whisper model, LLM model, or pipeline settings — re-process
-                a batch of videos to refresh their transcripts and stories.
+                On the <Link href="/videos" className="text-blue-400 hover:underline">Media</Link> page, click <strong>Select</strong> to enter multi-select mode. Choose individual files or <strong>Select all</strong>, then click <strong>Reprocess Selected</strong> to re-run the full pipeline on all selected files. Useful after updating your Whisper or LLM model settings.
               </p>
             </SubSection>
-            <SubSection title="Bulk clip ZIP">
+            <SubSection title="Bulk ZIP">
               <p className="text-gray-400 text-sm">
-                On the <Link href="/stories" className="text-blue-400 hover:underline">Stories</Link> page,
-                enter selection mode, choose the stories you want, and click <strong>Download ZIP</strong>.
-                The backend assembles a ZIP of the clip files in the background. A progress indicator
-                appears; when ready the browser downloads the file automatically.
+                On the <Link href="/stories" className="text-blue-400 hover:underline">Stories</Link> page, enter select mode, choose stories, and click <strong>Download ZIP</strong>. The browser downloads the ZIP automatically when it's ready.
               </p>
             </SubSection>
-            <SubSection title="Split all clips in a video">
+            <SubSection title="Split all clips in a file">
               <p className="text-gray-400 text-sm">
-                On a video detail page, click <strong>Split All</strong> to queue clip splits for
-                every story in that video. A spinner appears next to each story card as clips are
-                created; the page polls for completion and updates the clip badges automatically.
+                On a file detail page, click <strong>Split All</strong> to queue clip splits for every story at once. Story cards update with a clip badge as each split completes.
               </p>
             </SubSection>
           </Section>
@@ -676,8 +648,8 @@ export default function ManualPage() {
                 headers={["Setting", "Default", "Description"]}
                 rows={[
                   ["Ollama Endpoint", "(empty)", "URL of your Ollama instance, e.g. http://192.168.1.60:11434"],
-                  ["LLM Model", "llama3.1:8b", "Model for story detection. Click 'Test Connection' to pick from available models"],
-                  ["Embed Model", "nomic-embed-text", "Model used for semantic embeddings (required for Dedup)"],
+                  ["LLM Model", "llama3.1:8b", "Model used for story detection. Click 'Test Connection' to pick from available models."],
+                  ["Embed Model", "nomic-embed-text", "Model used for semantic embeddings (required for Dedup). Run 'ollama pull nomic-embed-text' first."],
                 ]}
               />
             </SubSection>
@@ -685,25 +657,23 @@ export default function ManualPage() {
               <Table
                 headers={["Setting", "Default", "Description"]}
                 rows={[
-                  ["Whisper Model", "base", "tiny / base / small / medium / large-v3 / distil-large-v3"],
-                  ["Compute Device", "auto", "auto detects CUDA then Metal then CPU. Can be forced to cuda, metal, or cpu"],
-                  ["Compute Precision", "auto", "float16 for GPU, int8 for CPU, float32 as a safe fallback"],
+                  ["Whisper Model", "base", "tiny / base / small / medium / large-v3 / distil-large-v3. Larger = more accurate but slower."],
+                  ["Compute Device", "auto", "auto detects CUDA → Metal → CPU. Force with: cuda, metal, or cpu."],
+                  ["Compute Precision", "auto", "float16 for GPU, int8 for CPU, float32 as a safe fallback."],
                 ]}
               />
-              <Warn>
-                Changing the Whisper model or compute device requires a worker restart to reload the model into memory.
-              </Warn>
+              <Warn>Changing Whisper settings requires a worker restart to reload the model into memory.</Warn>
             </SubSection>
             <SubSection title="Pipeline">
               <Table
                 headers={["Setting", "Default", "Description"]}
                 rows={[
-                  ["Scan Interval", "300", "Seconds between automatic library scans"],
-                  ["Auto-Split Clips", "false", "Create clip files for every story automatically after detection"],
-                  ["Auto-Embed Stories", "false", "Generate embeddings after detection (needed for Dedup)"],
-                  ["Sponsor Detection", "disabled", "sponsorblock (YouTube only), llm, both, or disabled"],
-                  ["Sponsor Action", "mark", "mark (tag only), skip (exclude from clips), split_out (separate clip files)"],
-                  ["Dedup Threshold", "0.85", "Cosine similarity threshold used on the Dedup page (0–1)"],
+                  ["Scan Interval", "300", "Seconds between automatic library scans. Set lower to catch new files faster."],
+                  ["Auto-Split Clips", "false", "Automatically split every story into a clip file after detection."],
+                  ["Auto-Embed Stories", "false", "Automatically generate embeddings after detection. Required for Dedup to work automatically."],
+                  ["Sponsor Detection", "disabled", "sponsorblock (YouTube files only), llm (any file), both, or disabled."],
+                  ["Sponsor Action", "mark", "mark — tag only. skip — exclude from auto-split clips. split_out — save as separate clip files."],
+                  ["Dedup Threshold", "0.85", "Cosine similarity threshold used on the Dedup page (0–1)."],
                 ]}
               />
             </SubSection>
@@ -711,8 +681,8 @@ export default function ManualPage() {
               <Table
                 headers={["Setting", "Default", "Description"]}
                 rows={[
-                  ["Video Library Path", "/data/downloads", "Where StoryEngine reads videos from — must be accessible inside the container"],
-                  ["Output Directory", "/segments", "Where split clip files are saved"],
+                  ["Media Library Path", "/data/downloads", "Where StoryEngine reads your audio/video files from. Must be accessible inside the container."],
+                  ["Output Directory", "/segments", "Where split clip files are saved. Must be writable inside the container."],
                 ]}
               />
             </SubSection>
@@ -720,161 +690,93 @@ export default function ManualPage() {
               <Table
                 headers={["Setting", "Default", "Description"]}
                 rows={[
-                  ["Google OAuth Client ID", "(empty)", "From Google Cloud Console — required for YouTube upload"],
-                  ["Google OAuth Client Secret", "(empty)", "From Google Cloud Console"],
-                  ["Default Privacy", "private", "public, unlisted, or private — applies to all uploaded clips"],
-                  ["Playlist Mode", "per_video", "per_video, per_channel, or none"],
-                  ["Auto-Upload After Split", "false", "Automatically upload newly split clips to YouTube"],
+                  ["Google OAuth Client ID", "(empty)", "From Google Cloud Console — required for YouTube upload."],
+                  ["Google OAuth Client Secret", "(empty)", "From Google Cloud Console."],
+                  ["Default Privacy", "private", "public, unlisted, or private — applies to all uploaded clips."],
+                  ["Playlist Mode", "per_video", "per_video, per_channel, or none."],
+                  ["Auto-Upload After Split", "false", "Automatically upload newly split clips to YouTube."],
                 ]}
               />
-              <Note>
-                The OAuth refresh token is stored automatically after connecting via the YouTube page.
-                It is displayed as read-only in Settings — do not edit it manually.
-              </Note>
             </SubSection>
           </Section>
 
           {/* GPU */}
           <Section id="gpu" title="GPU Acceleration">
-            <SubSection title="NVIDIA CUDA (Docker)">
-              <p className="text-gray-400 text-sm mb-2">
-                Run with the GPU overlay to pass all NVIDIA GPUs to the worker and Ollama:
-              </p>
+            <p className="text-gray-400 text-sm mb-4">
+              GPU acceleration dramatically speeds up Whisper transcription. Ollama also benefits from GPU when running larger LLM models.
+            </p>
+            <SubSection title="NVIDIA (Docker)">
               <pre className="bg-gray-900 border border-gray-800 rounded-lg p-3 text-sm font-mono text-gray-300 overflow-x-auto">
                 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
               </pre>
+              <p className="text-gray-400 text-sm mt-2">
+                This passes all NVIDIA GPUs to both the Celery worker (Whisper) and the Ollama container.
+              </p>
             </SubSection>
-            <SubSection title="Apple Silicon (native only)">
+            <SubSection title="Apple Silicon (native worker only)">
               <p className="text-gray-400 text-sm mb-2">
-                Docker Desktop on macOS cannot pass Metal through to containers. For GPU-accelerated
-                transcription on Apple Silicon, run the worker natively:
+                Docker Desktop on macOS cannot expose Apple Metal to containers. Run the GPU worker natively instead:
               </p>
               <pre className="bg-gray-900 border border-gray-800 rounded-lg p-3 text-sm font-mono text-gray-300 overflow-x-auto">
-                {`cd backend
+{`cd backend
 pip install ".[worker]"
 SE_WHISPER_DEVICE=metal celery -A app.celery_app:celery worker -Q gpu --concurrency=1`}
               </pre>
             </SubSection>
-            <SubSection title="Detection order">
-              <p className="text-gray-400 text-sm">
-                When <strong>Compute Device</strong> is set to <Code>auto</Code>, the worker detects:
-                CUDA (if CTranslate2 reports CUDA devices) → Apple Metal → CPU. You can override this
-                in Settings without restarting the whole stack — only a worker restart is needed.
-              </p>
-            </SubSection>
-          </Section>
-
-          {/* API */}
-          <Section id="api" title="API Reference">
-            <p className="text-gray-400 text-sm mb-4">
-              The backend exposes a REST API at <Code>http://localhost:8100/api/v1</Code>.
-              Full OpenAPI docs are available at <Code>http://localhost:8100/docs</Code>.
-            </p>
-            <Table
-              headers={["Method + Path", "Description"]}
-              rows={[
-                ["GET /videos", "List all videos (paginated, filterable by status/search)"],
-                ["GET /videos/{id}", "Video detail with metadata and stream_url"],
-                ["GET /videos/{id}/transcript", "Full transcript with segments"],
-                ["POST /pipeline/scan", "Trigger immediate library scan"],
-                ["POST /pipeline/reprocess/{id}", "Re-run full pipeline on a video"],
-                ["POST /pipeline/reprocess-batch", "Queue reprocessing for multiple video IDs"],
-                ["GET /stories", "List all stories (paginated, searchable)"],
-                ["GET /stories/{id}", "Story detail with transcript excerpt"],
-                ["PATCH /stories/{id}", "Update story title, summary, or timestamps"],
-                ["POST /export/stories/{id}/split", "Queue a clip split for one story"],
-                ["POST /export/videos/{id}/split", "Queue clip splits for all stories in a video"],
-                ["GET /export/stories/{id}/clip", "Download the clip file"],
-                ["POST /export/stories/{id}/thumbnail", "Queue thumbnail generation"],
-                ["GET /export/stories/{id}/thumbnail", "Download the thumbnail JPEG"],
-                ["GET /export/stories/{id}/srt", "Download SRT subtitle file"],
-                ["GET /export/stories/{id}/nfo", "Download NFO metadata file"],
-                ["GET /export/videos/{id}/playlist", "Export M3U8 or JSON playlist for a video"],
-                ["GET /export/stories/playlist?ids=…", "Export playlist for selected story IDs"],
-                ["POST /export/zip", "Queue a bulk ZIP of clip files"],
-                ["GET /export/zip/{task_id}/status", "Poll ZIP build status"],
-                ["GET /export/zip/{task_id}/download", "Download completed ZIP"],
-                ["GET /search/transcripts?q=…", "Full-text search across all transcripts"],
-                ["GET /dedup/embed", "Embed all un-embedded stories"],
-                ["GET /dedup/clusters", "Find duplicate story clusters"],
-                ["GET /dedup/similar/{id}", "Stories similar to a given story"],
-                ["GET /reports/channels", "List channels with aggregate stats"],
-                ["GET /reports/channels/{name}/dedup", "Dedup report for a channel"],
-                ["GET /reports/channels/{name}/videos", "List videos in a channel"],
-                ["GET /webhooks", "List all webhooks"],
-                ["POST /webhooks", "Create a webhook"],
-                ["PUT /webhooks/{id}", "Update a webhook"],
-                ["DELETE /webhooks/{id}", "Delete a webhook"],
-                ["POST /webhooks/{id}/test", "Send a test call to a webhook"],
-                ["GET /youtube/status", "Check YouTube connection status"],
-                ["GET /youtube/auth-url", "Get the Google OAuth authorization URL"],
-                ["GET /youtube/oauth/callback", "OAuth redirect handler (called by Google)"],
-                ["POST /youtube/revoke", "Disconnect YouTube / remove stored token"],
-                ["POST /youtube/upload/{story_id}", "Queue a story clip for YouTube upload"],
-                ["POST /youtube/upload-all", "Queue all un-uploaded clips for YouTube"],
-                ["GET /youtube/upload-status/{story_id}", "Check upload status for a story"],
-                ["GET /settings", "All settings"],
-                ["PUT /settings/{key}", "Update a setting"],
-                ["GET /settings/ollama/models", "List available Ollama models"],
-                ["GET /health", "Service health (DB, Redis, Ollama, ffmpeg)"],
-              ]}
-            />
           </Section>
 
           {/* Troubleshooting */}
           <Section id="troubleshooting" title="Troubleshooting">
-            <SubSection title="Videos not being scanned">
+            <SubSection title="Files are not being found">
               <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
-                <li>Check that <strong>Video Library Path</strong> is set correctly in Settings → Paths</li>
-                <li>Ensure the path is mounted inside the container (check <Code>docker-compose.yml</Code> volumes)</li>
-                <li>Click <strong>Scan Now</strong> on the Dashboard to trigger an immediate scan</li>
-                <li>Files with no audio track are automatically skipped</li>
+                <li>Check <strong>Media Library Path</strong> in Settings → Paths matches the container mount point exactly</li>
+                <li>Ensure the volume is mounted in both <Code>backend</Code> and <Code>worker</Code> services in docker-compose.yml</li>
+                <li>Click <strong>Scan Downloads</strong> on the Dashboard to trigger an immediate scan</li>
+                <li>Files without any audio track are silently skipped</li>
               </ul>
             </SubSection>
             <SubSection title="Stories not being detected">
               <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
-                <li>Verify Ollama is reachable — use <strong>Test Connection</strong> in Settings → LLM & Ollama</li>
-                <li>Try a larger LLM model for better story detection accuracy</li>
-                <li>Check the Jobs page for any error messages in the detect_stories stage</li>
-                <li>Very short transcripts (under 30 seconds) may yield a single story</li>
+                <li>Use <strong>Test Connection</strong> in Settings → LLM & Ollama to verify Ollama is reachable</li>
+                <li>Ensure the chosen model is downloaded on your Ollama host (<Code>ollama pull llama3.1:8b</Code>)</li>
+                <li>Try a larger model — smaller models (&lt;3b) often produce poor story boundaries</li>
+                <li>Check the Jobs page for error details in the detect_stories stage</li>
+              </ul>
+            </SubSection>
+            <SubSection title="Transcription is slow">
+              <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
+                <li>Use a smaller Whisper model (<Code>tiny</Code> or <Code>base</Code>) for faster results with acceptable accuracy</li>
+                <li>Enable GPU acceleration — see the <a href="#gpu" className="text-blue-400 hover:underline">GPU Acceleration</a> section above</li>
+                <li>Transcription is serialised (1 at a time) by design to prevent VRAM contention</li>
               </ul>
             </SubSection>
             <SubSection title="Clip splitting fails">
               <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
                 <li>Ensure <strong>Output Directory</strong> is set and writable inside the container</li>
-                <li>Check that ffmpeg is available: the Docker image installs it automatically</li>
-                <li>The original video file must still exist at its original path</li>
+                <li>Add a writable volume mount for the output directory in docker-compose.yml</li>
+                <li>The original source file must still exist at its original path</li>
               </ul>
             </SubSection>
-            <SubSection title="Embeddings / Dedup not working">
+            <SubSection title="Dedup / embeddings not working">
               <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
-                <li>Ensure Ollama is configured and the <strong>Embed Model</strong> is loaded (e.g. <Code>nomic-embed-text</Code>)</li>
-                <li>Run <Code>ollama pull nomic-embed-text</Code> on your Ollama host if not yet downloaded</li>
-                <li>Check the Jobs page for failed embed stages</li>
+                <li>Ensure the embed model is downloaded: <Code>ollama pull nomic-embed-text</Code></li>
+                <li>Check that Ollama is reachable from the worker container</li>
+                <li>Check Jobs for failed embed stages</li>
               </ul>
             </SubSection>
             <SubSection title="YouTube upload fails">
               <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
-                <li>Ensure the story has been split into a clip first — only clips can be uploaded</li>
-                <li>Check that Client ID and Client Secret are correctly set in Settings → YouTube</li>
-                <li>Re-connect via the YouTube page if the token has expired or been revoked</li>
-                <li>Verify the redirect URI in Google Cloud Console exactly matches <Code>http://localhost:8100/api/v1/youtube/oauth/callback</Code></li>
-                <li>Check the Jobs page for error details on the failed upload task</li>
+                <li>The story must have a split clip first — clips are what get uploaded</li>
+                <li>Verify Client ID and Client Secret are set correctly in Settings → YouTube</li>
+                <li>Re-connect via the YouTube page if the OAuth token has expired</li>
+                <li>Confirm the redirect URI in Google Cloud Console exactly matches <Code>http://localhost:8100/api/v1/youtube/oauth/callback</Code></li>
               </ul>
             </SubSection>
             <SubSection title="Webhooks not firing">
               <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
                 <li>Use the <strong>Test</strong> button on the Webhooks page to verify the endpoint is reachable</li>
-                <li>Ensure the webhook is marked <strong>active</strong> (green dot)</li>
-                <li>Confirm at least one event type is selected — a webhook with no events never fires</li>
+                <li>Check the webhook is <strong>active</strong> (green dot) and has at least one event selected</li>
                 <li>Webhook calls have a 5-second timeout — ensure your endpoint responds promptly</li>
-              </ul>
-            </SubSection>
-            <SubSection title="Transcription is slow">
-              <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
-                <li>Use a smaller Whisper model (<Code>tiny</Code> or <Code>base</Code>) for faster results</li>
-                <li>Enable GPU acceleration — see the <a href="#gpu" className="text-blue-400 hover:underline">GPU Acceleration</a> section</li>
-                <li>The gpu worker queue is serialised (concurrency=1) by design to prevent VRAM contention</li>
               </ul>
             </SubSection>
           </Section>
