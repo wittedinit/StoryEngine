@@ -44,6 +44,8 @@ Mix audio and video freely in the same library folder. Both are processed identi
 | **YouTube upload** | OAuth2 clip upload with automatic playlist management |
 | **Webhooks** | HTTP notifications with HMAC-SHA256 signing |
 | **Batch reprocess** | Multi-select to re-run the pipeline on many files at once |
+| **File removal** | Remove a file and all its stories/jobs from the database |
+| **Settings reset** | Reset any individual setting back to its environment/default value |
 
 ---
 
@@ -168,9 +170,27 @@ Channel statistics appear in the **Reports** section.
 
 ---
 
+## Environment variables
+
+These are set in `.env` (copy from `.env.default`) or passed directly to Docker Compose. They override the built-in defaults but can themselves be overridden by values saved in Settings.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SE_PORT` | `8100` | Host port for the API |
+| `SE_FRONTEND_PORT` | `3100` | Host port for the web UI |
+| `SE_WORKER_CONCURRENCY` | `2` | Number of parallel workers for scan/pipeline/llm queues |
+| `TZ` | `UTC` | Timezone for all services (e.g. `Europe/London`, `America/New_York`) |
+| `SE_WORK_DIR` | `/work` | Container path for temporary processing files |
+| `SE_DATA_DIR` | `/data` | Container path for persistent data |
+
+---
+
 ## Settings reference
 
 All settings are live-editable in the **Settings** page (no restart required unless noted).
+
+> **Priority order:** value saved in Settings UI > environment variable > built-in default.
+> To reset a setting back to its environment/default value, use the reset button in the Settings UI or `DELETE /api/v1/settings/{key}`.
 
 ### LLM & Ollama
 
@@ -222,10 +242,10 @@ All settings are live-editable in the **Settings** page (no restart required unl
 
 ## YouTube setup
 
-1. In [Google Cloud Console](https://console.cloud.google.com): create a project, enable the YouTube Data API v3, create OAuth 2.0 credentials
-2. Add `http://localhost:8100/api/v1/youtube/oauth/callback` as an authorised redirect URI
-3. In **Settings → YouTube**: enter your Client ID and Client Secret
-4. On the **YouTube** page: click **Connect YouTube** and complete the OAuth flow
+1. In [Google Cloud Console](https://console.cloud.google.com): create a project, enable the **YouTube Data API v3**, and create **OAuth 2.0 credentials** (type: Web Application)
+2. Add this exact URL as an authorised redirect URI: `http://localhost:8100/api/v1/youtube/oauth/callback`
+3. In **Settings → YouTube**: enter your Client ID and Client Secret, then save
+4. On the **YouTube** page: click **Connect YouTube** — you'll be redirected to Google to grant access, then sent back automatically
 
 > YouTube upload is purely **additive** — original files and local clips are **never deleted**. You control your local library and YouTube channel independently.
 
@@ -271,9 +291,10 @@ Backend API at `http://localhost:8100/api/v1`. Full OpenAPI docs at `http://loca
 
 ```
 # Media files
-GET    /api/v1/videos                           List all files (paginated, filterable)
+GET    /api/v1/videos                           List all files (paginated, filterable by status/search)
 GET    /api/v1/videos/{id}                      File detail + stream_url for in-browser player
 GET    /api/v1/videos/{id}/transcript           Full transcript with timestamped segments
+DELETE /api/v1/videos/{id}                      Remove a file and its stories/jobs from the database
 
 # Stories
 GET    /api/v1/stories                          List all stories (paginated, searchable)
@@ -285,11 +306,14 @@ POST   /api/v1/pipeline/scan                    Trigger an immediate library sca
 POST   /api/v1/pipeline/reprocess/{id}          Re-run full pipeline on one file
 POST   /api/v1/pipeline/reprocess-batch         Re-run pipeline on multiple file IDs
 
+# Jobs
+GET    /api/v1/jobs                             List recent processing jobs (paginated)
+
 # Clips & exports
 POST   /api/v1/export/stories/{id}/split        Split one story into a clip
 POST   /api/v1/export/videos/{id}/split         Split all stories in a file
 GET    /api/v1/export/stories/{id}/clip         Download the clip file
-POST   /api/v1/export/stories/{id}/thumbnail    Generate a thumbnail
+POST   /api/v1/export/stories/{id}/thumbnail    Generate a thumbnail (video files only)
 GET    /api/v1/export/stories/{id}/thumbnail    Download the thumbnail JPEG
 GET    /api/v1/export/stories/{id}/srt          Download SRT subtitle file
 GET    /api/v1/export/stories/{id}/nfo          Download NFO metadata file
@@ -320,17 +344,21 @@ DELETE /api/v1/webhooks/{id}                    Delete webhook
 POST   /api/v1/webhooks/{id}/test               Send a test call
 
 # YouTube
-GET    /api/v1/youtube/status                   Connection status
-GET    /api/v1/youtube/auth-url                 Get Google OAuth URL
-POST   /api/v1/youtube/revoke                   Disconnect YouTube
+GET    /api/v1/youtube/status                   OAuth connection status
+GET    /api/v1/youtube/oauth/authorize           Get Google OAuth redirect URL
+GET    /api/v1/youtube/oauth/callback            OAuth2 redirect handler (set this as your redirect URI)
+DELETE /api/v1/youtube/oauth/revoke              Disconnect YouTube and clear stored tokens
 POST   /api/v1/youtube/upload/{story_id}        Queue a clip for upload
 POST   /api/v1/youtube/upload-all               Queue all un-uploaded clips
-GET    /api/v1/youtube/upload-status/{id}       Check upload status
+GET    /api/v1/youtube/upload/{task_id}/status  Check upload progress
 
 # Settings & health
-GET    /api/v1/settings                         All settings
+GET    /api/v1/settings/setup                   Setup wizard status (validates Ollama + media path)
+GET    /api/v1/settings                         All settings with current values
 PUT    /api/v1/settings/{key}                   Update a setting
-GET    /api/v1/settings/ollama/models           List available Ollama models
+DELETE /api/v1/settings/{key}                   Reset a setting to its environment/default value
+GET    /api/v1/settings/ollama/models           List models available on the connected Ollama instance
+GET    /api/v1/stats                            Dashboard statistics (file counts, story counts, queue depth)
 GET    /health                                  Health check (DB, Redis, Ollama, ffmpeg)
 ```
 
@@ -395,12 +423,23 @@ StoryEngine/
 | Frontend | Next.js 15 App Router + Tailwind CSS |
 | Deploy | Docker Compose |
 
+### Docker Compose services
+
+| Service | Role |
+|---------|------|
+| `backend` | FastAPI API server |
+| `worker` | Celery worker (all queues) |
+| `beat` | Celery Beat periodic task scheduler — triggers library scans on interval |
+| `frontend` | Next.js web UI |
+| `postgres` | PostgreSQL 16 database |
+| `redis` | Redis message broker + result backend |
+
 ### Celery worker queues
 
 | Queue | Concurrency | What runs here |
 |-------|-------------|----------------|
-| `scan, pipeline` | 2 (configurable) | File scanning, audio extraction, clip splitting, thumbnails, ZIP, YouTube uploads |
-| `gpu` | 1 | Whisper transcription — serialised to prevent VRAM contention |
+| `scan, pipeline` | `SE_WORKER_CONCURRENCY` (default: 2) | File scanning, audio extraction, clip splitting, thumbnails, ZIP, YouTube uploads |
+| `gpu` | 1 (always serialised) | Whisper transcription — serialised to prevent VRAM contention |
 | `llm` | 2 | Ollama story detection, sponsor detection, embeddings |
 
 ---

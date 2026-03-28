@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-Video story splitting and deduplication engine. Pure Python backend (FastAPI + Celery), Next.js frontend, PostgreSQL, Redis, Ollama for LLM inference, faster-whisper for transcription.
+Audio and video story splitting and deduplication engine. Pure Python backend (FastAPI + Celery + Celery Beat), Next.js frontend, PostgreSQL, Redis, Ollama for LLM inference, faster-whisper for transcription.
 
-Reads video files from UYTDownloader's `/downloads` volume (filesystem only, no API dependency). Transcribes, detects story boundaries via LLM, and presents results in a web UI.
+Reads audio and video files from a configured media library directory (filesystem only, no API dependency). Supports `.mp3`, `.m4a`, `.opus`, `.flac`, `.wav`, `.mp4`, `.mkv`, `.webm`, `.avi`, `.mov`. Transcribes, detects story boundaries via LLM, and presents results in a web UI. UYTDownloader `/downloads` volume is one valid source but StoryEngine works with any media folder.
 
 ## Architecture
 
