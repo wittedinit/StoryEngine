@@ -69,6 +69,7 @@ export interface StoryDetail extends StorySummary {
   transcript_excerpt: string;
   llm_model: string;
   clip_path: string | null;
+  thumbnail_path: string | null;
   youtube_video_id: string | null;
   youtube_playlist_id: string | null;
 }
