@@ -1,0 +1,83 @@
+name: smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install test dependencies
+        run: pip install pytest httpx
+
+      - name: Build images
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            build backend worker ollama-mock
+
+      # Ensure the bind-mount target exists with runner ownership before
+      # docker compose creates it as root (which would block the test from
+      # writing the audio fixture).
+      - name: Create downloads dir
+        run: mkdir -p data/downloads work segments
+
+      - name: Bring up the stack
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            up -d postgres redis ollama-mock backend worker
+
+      - name: Wait for backend healthy
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8100/api/v1/stats >/dev/null; then
+              echo "Backend ready after ${i}s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend never became healthy"
+          docker compose logs backend
+          exit 1
+
+      - name: Run smoke test
+        env:
+          SE_TEST_BASE_URL: http://localhost:8100
+          SE_TEST_DOWNLOADS: ${{ github.workspace }}/data/downloads
+          SE_TEST_TIMEOUT: "900"
+        run: pytest tests/test_smoke.py
+
+      - name: Dump container logs on failure
+        if: failure()
+        run: |
+          echo "=== backend ==="
+          docker compose logs backend
+          echo "=== worker ==="
+          docker compose logs worker
+          echo "=== ollama-mock ==="
+          docker compose logs ollama-mock
+
+      - name: Tear down
+        if: always()
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            down -v --remove-orphans
