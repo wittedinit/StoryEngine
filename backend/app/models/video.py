@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import BigInteger, Float, Index, JSON, String
+from sqlalchemy import BigInteger, Enum as SAEnum, Float, Index, JSON, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,7 +21,16 @@ class Video(Base, TimestampMixin):
     format: Mapped[str | None] = mapped_column(String(32), nullable=True)
     title: Mapped[str] = mapped_column(String(1024), nullable=False)
     channel_name: Mapped[str | None] = mapped_column(String(512), nullable=True, index=True)
-    status: Mapped[VideoStatus] = mapped_column(default=VideoStatus.DISCOVERED, nullable=False)
+    status: Mapped[VideoStatus] = mapped_column(
+        SAEnum(
+            VideoStatus,
+            name="videostatus",
+            values_callable=lambda enum_cls: [m.value for m in enum_cls],
+            create_type=False,
+        ),
+        default=VideoStatus.DISCOVERED,
+        nullable=False,
+    )
     metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     transcript: Mapped["Transcript"] = relationship(back_populates="video", uselist=False)

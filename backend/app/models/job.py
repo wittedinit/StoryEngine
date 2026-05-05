@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, JSON, String, Text
+from sqlalchemy import DateTime, Enum as SAEnum, Float, ForeignKey, Index, Integer, JSON, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,7 +17,16 @@ class ProcessingJob(Base, TimestampMixin):
         UUID(as_uuid=True), ForeignKey("videos.id", ondelete="SET NULL"), nullable=True
     )
     job_type: Mapped[str] = mapped_column(String(32), nullable=False, default="full_pipeline")
-    status: Mapped[JobStatus] = mapped_column(default=JobStatus.PENDING, nullable=False)
+    status: Mapped[JobStatus] = mapped_column(
+        SAEnum(
+            JobStatus,
+            name="jobstatus",
+            values_callable=lambda enum_cls: [m.value for m in enum_cls],
+            create_type=False,
+        ),
+        default=JobStatus.PENDING,
+        nullable=False,
+    )
     celery_task_id: Mapped[str | None] = mapped_column(String(256), nullable=True)
     progress_pct: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -39,8 +48,25 @@ class JobStage(Base, TimestampMixin):
     job_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("processing_jobs.id", ondelete="CASCADE"), nullable=False
     )
-    stage: Mapped[PipelineStage] = mapped_column(nullable=False)
-    status: Mapped[StageStatus] = mapped_column(default=StageStatus.PENDING, nullable=False)
+    stage: Mapped[PipelineStage] = mapped_column(
+        SAEnum(
+            PipelineStage,
+            name="pipelinestage",
+            values_callable=lambda enum_cls: [m.value for m in enum_cls],
+            create_type=False,
+        ),
+        nullable=False,
+    )
+    status: Mapped[StageStatus] = mapped_column(
+        SAEnum(
+            StageStatus,
+            name="stagestatus",
+            values_callable=lambda enum_cls: [m.value for m in enum_cls],
+            create_type=False,
+        ),
+        default=StageStatus.PENDING,
+        nullable=False,
+    )
     order: Mapped[int] = mapped_column(Integer, nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

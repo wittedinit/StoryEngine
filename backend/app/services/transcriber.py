@@ -108,7 +108,7 @@ def transcribe_audio(audio_path: Path) -> TranscriptionResult:
             "start_time": round(segment.start, 3),
             "end_time": round(segment.end, 3),
             "text": segment.text.strip(),
-            "confidence": round(segment.avg_log_prob, 4) if segment.avg_log_prob else None,
+            "confidence": round(segment.avg_logprob, 4) if segment.avg_logprob else None,
         }
         segments.append(seg_dict)
         full_text_parts.append(segment.text.strip())

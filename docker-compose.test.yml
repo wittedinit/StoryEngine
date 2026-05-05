@@ -1,0 +1,39 @@
+services:
+  ollama-mock:
+    build:
+      context: .
+      dockerfile: docker/ollama-mock/Dockerfile
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:11434/"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    environment:
+      - SE_OLLAMA_URL=http://ollama-mock:11434
+      - SE_WHISPER_MODEL=tiny
+      - SE_WHISPER_DEVICE=cpu
+      - SE_WHISPER_COMPUTE_TYPE=int8
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama-mock:
+        condition: service_healthy
+
+  worker:
+    environment:
+      - SE_OLLAMA_URL=http://ollama-mock:11434
+      - SE_WHISPER_MODEL=tiny
+      - SE_WHISPER_DEVICE=cpu
+      - SE_WHISPER_COMPUTE_TYPE=int8
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama-mock:
+        condition: service_healthy
